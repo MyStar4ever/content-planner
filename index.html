@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Content Planner & Studio</title>
+    <!-- iOS Web App & Home Screen Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ContentPlanner">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2339d353'/%3E%3Cpath d='M7 10h10M7 14h6' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            900: '#000000',
+                            800: '#0d1117',
+                            700: '#161b22',
+                            600: '#21262d',
+                            500: '#30363d',
+                            400: '#8b949e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { background-color: #000; color: #f0f6fc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #0d1117; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8b949e; }
+        .modal-enter { animation: fadeIn 0.2s ease-out forwards; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .slide-animate { animation: slideIn 0.3s ease-out; }
+        
+        /* Стили сетки из трекера */
+        .habit-heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 4px !important;
+        }
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-28 antialiased selection:bg-emerald-500 selection:text-black" x-data="contentPlannerApp()" x-init="initApp()">
+
+    <!-- Header / Navbar (Clean, minimalist iOS style) -->
+    <header class="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <template x-if="currentScreen !== 'platforms'">
+                <button @click="navigateBack()" class="text-zinc-400 hover:text-white transition active:scale-95">
+                    <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                </button>
+            </template>
+        </div>
+
+        <div class="flex items-center space-x-4">
+            <!-- Cloud Sync Status Indicator -->
+            <div class="flex items-center" :title="syncStatusText">
+                <span class="w-2.5 h-2.5 rounded-full" :class="syncStatusClass"></span>
+            </div>
+            
+            <button @click="openSettingsModal = true" class="text-zinc-400 hover:text-white transition active:scale-95" title="Настройки">
+                <i data-lucide="settings" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-xl mx-auto px-4 pt-20 space-y-5">
+
+        <!-- ================= SCREEN 1: PLATFORMS ================= -->
+        <template x-if="currentScreen === 'platforms'">
+            <div class="space-y-5 modal-enter">
+                
+                <!-- Platform Cards -->
+                <div class="space-y-6">
+                    <template x-for="p in platforms" :key="p.id">
+                        <div class="space-y-3">
+                            <!-- Площадка (клик по ней ведет внутрь) -->
+                            <div @click="selectPlatform(p)" class="group relative cursor-pointer transition active:opacity-70 flex items-center justify-between">
+                                <h3 class="text-sm font-bold text-white transition truncate" x-text="p.name"></h3>
+                                <div class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 transition">
+                                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+
+                                <div class="grid grid-cols-12 gap-1.5 habit-heatmap-grid" 
+                                     @touchstart="handleTouchStart($event)" 
+                                     @touchend="handleTouchEnd($event, p.id)">
+                                    <template x-for="cell in getMonthGrid(p.id)" :key="cell.dateStr">
+                                        <div @click="selectPlatform(p); platformTab = 'calendar'; scheduleDateInput = cell.dateStr"
+                                             class="aspect-square rounded-[3px] cursor-pointer transition active:scale-90"
+                                             :class="[getColorClass(cell.intensity), cell.isNextMonth ? 'opacity-55' : '']"
+                                             :title="cell.dateStr">
+                                        </div>
+                                    </template>
+                                </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Global Management Buttons -->
+                <div class="pt-4 border-t border-[#30363d] flex items-center justify-between">
+                    <button @click="openFormatsManager = true" class="px-4 py-2 rounded-xl bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-xs font-semibold text-zinc-300 hover:text-white transition flex items-center space-x-2">
+                        <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+                        <span>Конструктор форматов постов</span>
+                    </button>
+                    <button @click="exportMarkdownBackup()" class="px-3 py-2 rounded-xl bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-xs font-semibold text-zinc-400 hover:text-white transition flex items-center space-x-1.5" title="Экспорт в Markdown файл">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Экспорт .md</span>
+                    </button>
+                </div>
+
+            </div>
+        </template>
+
+
+        <!-- ================= SCREEN 2: PLATFORM DETAIL ================= -->
+        <template x-if="currentScreen === 'platform_detail' && activePlatform">
+            <div class="space-y-4 modal-enter">
+
+                <!-- Calendar Heatmap (Removed from here, moved to main list) -->
+
+                <div class="flex items-center space-x-1 bg-[#161b22] p-1 rounded-xl border border-[#30363d]">
+                    <button @click="platformTab = 'ideas'" :class="platformTab === 'ideas' ? 'bg-[#21262d] text-white font-bold shadow' : 'text-zinc-400 hover:text-zinc-200'" class="flex-1 py-2 rounded-lg text-xs transition text-center">
+                        Банк идей (<span x-text="platformIdeas.length"></span>)
+                    </button>
+                    <button @click="platformTab = 'calendar'" :class="platformTab === 'calendar' ? 'bg-[#21262d] text-white font-bold shadow' : 'text-zinc-400 hover:text-zinc-200'" class="flex-1 py-2 rounded-lg text-xs transition text-center">
+                        Календарь / План
+                    </button>
+                    <button @click="platformTab = 'archive'" :class="platformTab === 'archive' ? 'bg-[#21262d] text-white font-bold shadow' : 'text-zinc-400 hover:text-zinc-200'" class="flex-1 py-2 rounded-lg text-xs transition text-center">
+                        Архив / Результаты
+                    </button>
+                </div>
+
+                <!-- TAB 1: IDEAS BANK -->
+                <template x-if="platformTab === 'ideas'">
+                    <div class="space-y-3">
+                        <div class="space-y-2.5">
+                            <template x-for="post in platformIdeas" :key="post.id">
+                                <div class="p-4 rounded-2xl bg-[#161b22] border border-[#30363d] space-y-3" x-data="{ openMenu: false }">
+                                    <div class="flex items-start justify-between">
+                                        <div class="space-y-1 min-w-0 pr-2">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#21262d] text-zinc-400 border border-[#30363d]" x-text="getFormatName(post.formatId)"></span>
+                                                <span class="text-[10px] text-zinc-500" x-text="formatDate(post.createdAt)"></span>
+                                            </div>
+                                            <h3 class="text-sm font-bold text-white pt-1" x-text="post.title || 'Без названия'"></h3>
+                                        </div>
+                                        <div class="relative">
+                                            <button @click="openMenu = !openMenu" class="p-2 text-zinc-400 hover:text-white transition">
+                                                <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                                            </button>
+                                            <div x-show="openMenu" @click.away="openMenu = false" class="absolute right-0 mt-2 w-48 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl p-1 z-50 modal-enter" x-cloak>
+                                                <button @click="editPost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Редактировать</button>
+                                                <button @click="schedulePostModal(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Запланировать</button>
+                                                <button @click="copyStitchedPost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Копировать пост</button>
+                                                <button @click="copyGptPromptForPost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Промпт для GPT</button>
+                                                <div class="border-t border-[#30363d] my-1"></div>
+                                                <button @click="deletePost(post.id); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-[#21262d] hover:text-red-300 transition">Удалить</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Blocks preview summary -->
+                                    <div class="space-y-2">
+                                        <template x-for="(val, blockKey) in post.blocks" :key="blockKey">
+                                            <div class="text-xs" x-show="val && val.trim().length > 0">
+                                                <span class="font-bold text-zinc-500 mr-1.5" x-text="getBlockLabel(post.formatId, blockKey) + ':'"></span>
+                                                <span class="text-zinc-300" x-text="val"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+
+                <!-- TAB 2: CALENDAR / SCHEDULE -->
+                <template x-if="platformTab === 'calendar'">
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-2xl bg-[#161b22] border border-[#30363d] space-y-3">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-bold text-white">Контент-календарь на неделю</h3>
+                                <div class="flex items-center space-x-1 text-xs text-zinc-400">
+                                    <button @click="shiftWeek(-1)" class="p-1 rounded bg-[#21262d] hover:text-white"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                                    <span class="font-bold text-white px-2" x-text="currentWeekLabel"></span>
+                                    <button @click="shiftWeek(1)" class="p-1 rounded bg-[#21262d] hover:text-white"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-7 gap-2">
+                                <template x-for="day in currentWeekDays" :key="day.dateStr">
+                                    <div class="p-3 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2 min-h-[120px] flex flex-col justify-between">
+                                        <div>
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-[10px] font-bold uppercase text-zinc-400" x-text="day.dayName"></span>
+                                                <span class="text-xs font-extrabold text-white" :class="day.isToday ? 'text-emerald-400' : ''" x-text="day.dayNum"></span>
+                                            </div>
+                                            <div class="mt-2 space-y-1.5">
+                                                <template x-for="post in getPostsForDate(day.dateStr)" :key="post.id">
+                                                    <div @click="editPost(post)" class="p-2 rounded-lg bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] cursor-pointer space-y-1">
+                                                        <div class="text-[10px] text-cyan-400 font-bold truncate" x-text="getFormatName(post.formatId)"></div>
+                                                        <div class="text-xs font-semibold text-white truncate" x-text="post.title || 'Пост'"></div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <button @click="createPostForDate(day.dateStr)" class="w-full py-1 rounded bg-[#21262d] hover:bg-[#30363d] text-[10px] font-bold text-zinc-400 hover:text-white transition text-center">
+                                            + План
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+
+                <!-- TAB 3: ARCHIVE & RESULTS -->
+                <template x-if="platformTab === 'archive'">
+                    <div class="space-y-3">
+                        <div class="text-xs font-bold text-zinc-400 uppercase tracking-wider px-1">Опубликованные посты и результаты</div>
+                        
+                        <template x-if="platformPublished.length === 0">
+                            <div class="text-center py-12 px-4 rounded-2xl bg-[#161b22] border border-[#30363d] space-y-2">
+                                <div class="text-xs text-zinc-400">Пока нет опубликованных постов. Запланируйте дату выхода поста!</div>
+                            </div>
+                        </template>
+
+                        <div class="space-y-3">
+                            <template x-for="post in platformPublished" :key="post.id">
+                                <div class="p-4 rounded-2xl bg-[#161b22] border border-[#30363d] space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <div class="space-y-0.5">
+                                             <div class="flex items-center space-x-2">
+                                                 <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#21262d] text-zinc-300 border border-[#30363d]">Опубликовано</span>
+                                                 <span class="text-[10px] text-zinc-400" x-text="'Дата: ' + (post.scheduledDate || 'н/д')"></span>
+                                             </div>
+                                            <h3 class="text-sm font-bold text-white pt-1" x-text="post.title || 'Без названия'"></h3>
+                                        </div>
+                                    </div>
+
+                                    <!-- Results / Metrics Input Section -->
+                                    <div class="p-3 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2">
+                                        <div class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Результаты / Метрики поста</div>
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <div>
+                                                <label class="text-[10px] text-zinc-500">Просмотры / Охват</label>
+                                                <input type="text" x-model="post.results.views" @input="saveData()" placeholder="напр. 5.2k" class="w-full mt-1 px-2.5 py-1 rounded-lg bg-[#21262d] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] text-zinc-500">Лайки / Реакции</label>
+                                                <input type="text" x-model="post.results.likes" @input="saveData()" placeholder="напр. 340" class="w-full mt-1 px-2.5 py-1 rounded-lg bg-[#21262d] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] text-zinc-500">Лиды / Заявки / $</label>
+                                                <input type="text" x-model="post.results.leads" @input="saveData()" placeholder="напр. 12 лидов" class="w-full mt-1 px-2.5 py-1 rounded-lg bg-[#21262d] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+            </div>
+        </template>
+
+    </main>
+
+
+    <!-- FLOATING ACTION BUTTON (FAB) IN BOTTOM RIGHT CORNER -->
+    <template x-if="currentScreen === 'platform_detail'">
+        <div class="fixed bottom-6 right-6 z-50" x-data="{ openAddMenu: false }">
+            <!-- Popover menu -->
+            <div x-show="openAddMenu" @click.away="openAddMenu = false" class="absolute bottom-16 right-0 w-60 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl p-1.5 space-y-1 modal-enter" x-cloak>
+                <div @click="openNewPostModal(); openAddMenu = false" class="px-3 py-2.5 rounded-xl text-xs font-medium text-white hover:bg-[#21262d] cursor-pointer flex items-center space-x-2">
+                    <i data-lucide="lightbulb" class="w-4 h-4 text-amber-400"></i>
+                    <span>💡 Создать быструю идею</span>
+                </div>
+                <div class="border-t border-[#30363d] my-1"></div>
+                <div class="px-3 py-1 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Создать по формату:</div>
+                <template x-for="fmt in formats" :key="fmt.id">
+                    <div @click="openNewPostModalForFormat(fmt.id); openAddMenu = false" class="px-3 py-2 rounded-xl text-xs font-medium text-zinc-300 hover:text-white hover:bg-[#21262d] cursor-pointer truncate" x-text="fmt.name"></div>
+                </template>
+            </div>
+
+            <!-- Main FAB Button -->
+            <button @click="openAddMenu = !openAddMenu" class="w-14 h-14 rounded-full bg-[#21262d] hover:bg-[#30363d] text-white border border-[#30363d] flex items-center justify-center shadow-2xl transition active:scale-95" title="Создать">
+                <i data-lucide="plus" class="w-7 h-7"></i>
+            </button>
+        </div>
+    </template>
+
+
+    <!-- ================= MODAL: FORMATS MANAGER & CREATOR ================= -->
+    <div x-show="openFormatsManager" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
+        <div @click.away="openFormatsManager = false" class="w-full max-w-lg bg-[#161b22] border border-[#30363d] rounded-3xl p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl modal-enter">
+            <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="layers" class="w-5 h-5 text-cyan-400"></i>
+                    <h3 class="text-base font-bold text-white">Конструктор форматов постов</h3>
+                </div>
+                <button @click="openFormatsManager = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+
+            <p class="text-xs text-zinc-400 leading-relaxed">
+                Добавьте блоки, из которых будет состоять пост.
+            </p>
+
+            <!-- List of existing formats -->
+            <div class="space-y-3 pt-2">
+                <template x-for="fmt in formats" :key="fmt.id">
+                    <div class="p-3.5 rounded-2xl bg-[#0d1117] border border-[#30363d] space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-3 h-3 rounded-full" :style="`background-color: ${fmt.color || '#39d353'};`"></span>
+                                <h4 class="text-sm font-bold text-white" x-text="fmt.name"></h4>
+                            </div>
+                            <button @click="deleteFormat(fmt.id)" class="p-1 rounded text-zinc-500 hover:text-red-400 transition" title="Удалить формат">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-1 pt-1">
+                            <template x-for="b in fmt.blocks" :key="b.key">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#21262d] text-cyan-300 border border-[#30363d]" x-text="b.label"></span>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Create New Format Form -->
+                <div class="space-y-4 pt-4">
+                    <div>
+                        <input type="text" x-model="newFormatName" placeholder="Название формата" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs text-zinc-400">Блоки</label>
+                            <button @click="addNewFormatBlock()" class="text-xs font-bold text-zinc-300 hover:underline">+ Блок</button>
+                        </div>
+
+                        <template x-for="(b, idx) in newFormatBlocks" :key="idx">
+                            <div class="p-3 rounded-xl bg-[#161b22] border border-[#30363d] space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] font-bold text-zinc-500 uppercase">Блок №<span x-text="idx + 1"></span></span>
+                                    <button @click="removeNewFormatBlock(idx)" class="text-[10px] text-red-400 hover:underline">Удалить</button>
+                                </div>
+                                <input type="text" x-model="b.label" placeholder="Название блока" class="w-full px-3 py-2 rounded-lg bg-[#0d1117] text-white text-xs border border-[#30363d] outline-none">
+                                <input type="text" x-model="b.placeholder" placeholder="Описание..." class="w-full px-3 py-2 rounded-lg bg-[#0d1117] text-white text-xs border border-[#30363d] outline-none">
+                            </div>
+                        </template>
+                    </div>
+
+                    <button @click="saveNewFormat()" class="w-full py-3 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
+                        Сохранить формат
+                    </button>
+                </div>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL: NEW / EDIT POST (FILL FORMAT BLOCKS) ================= -->
+    <div x-show="openPostModal" class="fixed inset-0 z-50 bg-black flex flex-col p-4 overflow-y-auto modal-enter" x-cloak>
+        <div class="max-w-xl w-full mx-auto space-y-5 pb-20">
+            <!-- Top bar -->
+            <div class="flex items-center justify-between pt-2 pb-2 border-b border-[#21262d]">
+                <h3 class="text-sm font-bold text-white" x-text="editingPostId ? 'Редактировать пост' : 'Новый пост'"></h3>
+                <button @click="closePostModal()" class="p-2 text-zinc-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Post Title & Format Selector -->
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-zinc-400 font-medium">Тема / Название</label>
+                    <input type="text" x-model="currentPost.title" placeholder="О чем этот пост..." class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="text-xs text-zinc-400 font-medium">Формат</label>
+                    <select x-model="currentPost.formatId" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                        <template x-for="fmt in formats" :key="fmt.id">
+                            <option :value="fmt.id" x-text="fmt.name"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <!-- BLOCKS FILLING -->
+            <div class="space-y-4 pt-2">
+                <template x-for="blockDef in activePostFormatBlocks" :key="blockDef.key">
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between px-1">
+                            <label class="text-xs font-bold text-zinc-300" x-text="blockDef.label"></label>
+                        </div>
+                        <textarea x-model="currentPost.blocks[blockDef.key]" 
+                                  placeholder="Введите текст..." 
+                                  oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                  class="w-full px-3.5 py-3 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
+                    </div>
+                </template>
+            </div>
+
+            <!-- LIVE PREVIEW & COPY BUTTON EXPLANATION -->
+            <div class="space-y-2 pt-2 border-t border-[#21262d]">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-white">Готовый пост (Превью)</span>
+                        <p class="text-[10px] text-zinc-400">Автоматически собирает все блоки в единый текст для публикации</p>
+                    </div>
+                    <button @click="copyStitchedPost(currentPost)" class="px-3 py-1.5 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white text-xs font-semibold transition flex items-center space-x-1.5">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span>Копировать весь текст</span>
+                    </button>
+                </div>
+                <div class="p-3.5 rounded-xl bg-[#161b22] border border-[#30363d] text-xs text-zinc-300 whitespace-pre-wrap font-sans" x-text="getStitchedPostText(currentPost) || 'Здесь появится готовый текст поста после заполнения блоков...'"></div>
+            </div>
+
+            <!-- Save Buttons -->
+            <div class="flex items-center space-x-2 pt-4">
+                <button @click="savePost()" class="flex-1 py-3 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-bold text-xs transition border border-[#30363d]">
+                    Сохранить
+                </button>
+                <button @click="closePostModal()" class="px-5 py-3 rounded-xl bg-transparent hover:bg-[#161b22] text-zinc-400 hover:text-white text-xs font-semibold transition">
+                    Отмена
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL: SETTINGS & GITHUB SYNC ================= -->
+    <div x-show="openSettingsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
+        <div @click.away="openSettingsModal = false" class="w-full max-w-md bg-[#161b22] border border-[#30363d] rounded-3xl p-5 space-y-4 shadow-2xl modal-enter">
+            <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="settings" class="w-5 h-5 text-zinc-300"></i>
+                    <h3 class="text-base font-bold text-white">Настройки и Облако</h3>
+                </div>
+                <button @click="openSettingsModal = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+
+        <div class="space-y-4">
+            <div class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Настройки</div>
+            
+            <button @click="openNewPlatformModal = true; openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-emerald-400">
+                + Добавить площадку
+            </button>
+
+            <div class="pt-4 border-t border-[#30363d] space-y-3">
+                <div class="text-xs font-bold text-zinc-300 uppercase tracking-wider">GitHub Gist</div>
+                <div>
+                    <label class="text-xs text-zinc-400">Token</label>
+                    <input type="password" x-model="githubToken" placeholder="ghp_..." class="w-full mt-1 px-3 py-2 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs text-zinc-400">Gist ID</label>
+                    <input type="text" x-model="gistId" placeholder="ID..." class="w-full mt-1 px-3 py-2 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                </div>
+                <button @click="saveGithubSettings()" class="w-full py-2.5 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
+                    Сохранить
+                </button>
+            </div>
+        </div>
+
+            <div class="border-t border-[#30363d] pt-4 space-y-2">
+                <div class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Резервная копия и файлы</div>
+                <div class="flex space-x-2">
+                    <button @click="exportMarkdownBackup()" class="flex-1 py-2 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-xs font-semibold text-zinc-200 transition">
+                        Экспорт в Markdown (.md)
+                    </button>
+                    <button @click="exportJsonBackup()" class="flex-1 py-2 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-xs font-semibold text-zinc-200 transition">
+                        Экспорт JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL: NEW PLATFORM ================= -->
+    <div x-show="openNewPlatformModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
+        <div @click.away="openNewPlatformModal = false" class="w-full max-w-sm bg-[#161b22] border border-[#30363d] rounded-3xl p-5 space-y-4 shadow-2xl modal-enter">
+            <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                <h3 class="text-base font-bold text-white">Новая площадка</h3>
+                <button @click="openNewPlatformModal = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-zinc-400">Название площадки</label>
+                    <input type="text" x-model="newPlatform.name" placeholder="напр. YouTube Shorts" class="w-full mt-1 px-3 py-2 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs text-zinc-400">Описание / Назначение</label>
+                    <input type="text" x-model="newPlatform.desc" placeholder="напр. Вертикальные ролики до 60с" class="w-full mt-1 px-3 py-2 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs text-zinc-400">Цвет акцента</label>
+                    <input type="color" x-model="newPlatform.color" class="w-full mt-1 h-10 rounded-xl bg-[#0d1117] border border-[#30363d] cursor-pointer">
+                </div>
+
+                <button @click="createPlatform()" class="w-full py-2.5 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
+                    Создать площадку
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL: SCHEDULE POST ================= -->
+    <div x-show="openScheduleModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
+        <div @click.away="openScheduleModal = false" class="w-full max-w-sm bg-[#161b22] border border-[#30363d] rounded-3xl p-5 space-y-4 shadow-2xl modal-enter">
+            <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                <h3 class="text-base font-bold text-white">Запланировать дату выхода</h3>
+                <button @click="openScheduleModal = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-zinc-400">Выберите дату публикации</label>
+                    <input type="date" x-model="scheduleDateInput" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
+                </div>
+
+                <div class="flex items-center space-x-2 pt-2">
+                    <button @click="confirmScheduleDate()" class="flex-1 py-2.5 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
+                        Назначить дату
+                    </button>
+                    <button @click="clearScheduleDate()" class="px-3 py-2.5 rounded-xl bg-[#21262d] text-red-400 text-xs font-semibold">
+                        Снять дату
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        function contentPlannerApp() {
+            return {
+                currentScreen: 'platforms', // platforms | platform_detail
+                activePlatform: null,
+                platformTab: 'ideas', // ideas | calendar | archive
+
+                platforms: [
+                    { id: 'inst', name: 'Instagram', desc: 'Сторис, посты, карусели и Reels', color: '#ec4899', icon: '📸' },
+                    { id: 'threads', name: 'Threads', desc: 'Текстовые мысли и дискуссии', color: '#3b82f6', icon: '🧵' },
+                    { id: 'tg', name: 'Telegram', desc: 'Экспертный канал и лонгриды', color: '#0ea5e9', icon: '✈️' }
+                ],
+
+                formats: [
+                    {
+                        id: 'reels_classic',
+                        name: 'Reels / Shorts (Хук + Мясо + CTA)',
+                        color: '#ef4444',
+                        blocks: [
+                            { key: 'hook', label: 'Хук (0-3 сек)', placeholder: 'Захватывающее внимание первое предложение...' },
+                            { key: 'promise', label: 'Обещание / Проблема', placeholder: 'Какую боль решаем или что докажем...' },
+                            { key: 'meat', label: 'Суть / Решение', placeholder: 'Основной полезный контент...' },
+                            { key: 'cta', label: 'Призыв к действию (CTA)', placeholder: 'Подпишись, напиши слово в коммент...' }
+                        ]
+                    },
+                    {
+                        id: 'expert_post',
+                        name: 'Экспертный пост / Лонгрид',
+                        color: '#10b981',
+                        blocks: [
+                            { key: 'title_block', label: 'Заголовок', placeholder: 'Интригующий заголовок...' },
+                            { key: 'situation', label: 'Ситуация / Кейс', placeholder: 'С чем столкнулся клиент или я...' },
+                            { key: 'analysis', label: 'Разбор / Ошибка', placeholder: 'Почему так происходит...' },
+                            { key: 'conclusion', label: 'Вывод и Инсайт', placeholder: 'Главная мысль...' },
+                            { key: 'cta', label: 'Дискуссия / CTA', placeholder: 'А как у вас?' }
+                        ]
+                    }
+                ],
+
+                posts: [], // { id, platformId, formatId, title, blocks: {}, scheduledDate, status: 'idea'|'published', results: {views, likes, leads}, createdAt }
+
+                // Modals
+                openSettingsModal: false,
+                openFormatsManager: false,
+                openNewPlatformModal: false,
+                openPostModal: false,
+                openScheduleModal: false,
+
+                // New platform form
+                newPlatform: { name: '', desc: '', color: '#39d353' },
+
+                // New format form
+                newFormatName: '',
+                newFormatBlocks: [],
+
+                // Post editing
+                editingPostId: null,
+                currentPost: {
+                    platformId: '',
+                    formatId: 'reels_classic',
+                    title: '',
+                    blocks: {},
+                    scheduledDate: '',
+                    status: 'idea',
+                    results: { views: '', likes: '', leads: '' }
+                },
+
+                // Scheduling target
+                schedulingPost: null,
+                scheduleDateInput: '',
+
+                // Calendar week view
+                weekOffset: 0,
+                currentDate: new Date(),
+                platformOffsets: {}, // Смещение для каждой площадки
+
+                changeMonth(platformId, delta) {
+                    this.platformOffsets[platformId] = (this.platformOffsets[platformId] || 0) + delta;
+                    // Анимация: находим элемент сетки и запускаем анимацию
+                    const el = document.getElementById('heatmap-' + platformId);
+                    if (el) {
+                        el.classList.remove('slide-animate');
+                        void el.offsetWidth; // Триггер для перезапуска анимации
+                        el.classList.add('slide-animate');
+                    }
+                },
+
+                handleTouchStart(e) {
+                    this.touchStartX = e.touches[0].clientX;
+                },
+                
+                handleTouchEnd(e, platformId) {
+                    let touchEndX = e.changedTouches[0].clientX;
+                    let diff = this.touchStartX - touchEndX;
+                    if (Math.abs(diff) > 50) { // Порог свайпа
+                        if (diff > 0) this.changeMonth(platformId, 1); // Свайп влево -> следующий месяц
+                        else this.changeMonth(platformId, -1); // Свайп вправо -> предыдущий месяц
+                    }
+                },
+
+                getMonthGrid(platformId) {
+                    let y = this.currentDate.getFullYear();
+                    let m = this.currentDate.getMonth() + (this.platformOffsets[platformId] || 0);
+                    
+                    let firstDay = new Date(y, m, 1);
+                    let lastDayOfMonth = new Date(y, m + 1, 0);
+                    let daysCount = lastDayOfMonth.getDate();
+                    
+                    let list = [];
+                    for (let i = 1; i <= daysCount; i++) {
+                        let dateObj = new Date(y, m, i);
+                        let dateStr = dateObj.toISOString().split('T')[0];
+                        list.push({
+                            dateStr: dateStr,
+                            intensity: this.getIntensityForPlatform(platformId, dateStr),
+                            isNextMonth: false
+                        });
+                    }
+                    
+                    let remaining = 36 - daysCount;
+                    for (let j = 1; j <= remaining; j++) {
+                        let nextDateObj = new Date(y, m + 1, j);
+                        let nextDateStr = nextDateObj.toISOString().split('T')[0];
+                        list.push({
+                            dateStr: nextDateStr,
+                            intensity: this.getIntensityForPlatform(platformId, nextDateStr),
+                            isNextMonth: true
+                        });
+                    }
+                    return list;
+                },
+
+                getIntensity(dateStr) {
+                    if (!this.activePlatform) return 0;
+                    return this.getIntensityForPlatform(this.activePlatform.id, dateStr);
+                },
+
+                getIntensityForPlatform(platformId, dateStr) {
+                    const postsOnDate = this.posts.filter(p => p.platformId === platformId && p.scheduledDate === dateStr);
+                    if (postsOnDate.length === 0) return 0;
+                    if (postsOnDate.some(p => p.status === 'published')) return 2;
+                    return 1;
+                },
+
+                getColorClass(intensity) {
+                    if (intensity === 2) return 'bg-[#2ea043]'; // Зеленый как в трекере
+                    if (intensity === 1) return 'bg-[#525a65]'; // Яркий серый как в трекере
+                    return 'bg-[#161b22]'; // Фоновый серый (пустой день)
+                },
+
+                // GitHub sync
+                githubToken: '',
+                gistId: '',
+                syncStatus: 'local', // local | syncing | synced | error
+
+                get headerTitle() {
+                    if (this.currentScreen === 'platforms') return 'Content Studio';
+                    if (this.activePlatform) return this.activePlatform.name;
+                    return 'Контент План';
+                },
+
+                get totalIdeasCount() {
+                    return this.posts.length;
+                },
+
+                get scheduledThisWeekCount() {
+                    const days = this.currentWeekDays.map(d => d.dateStr);
+                    return this.posts.filter(p => p.scheduledDate && days.includes(p.scheduledDate)).length;
+                },
+
+                get platformIdeas() {
+                    if (!this.activePlatform) return [];
+                    return this.posts.filter(p => p.platformId === this.activePlatform.id && p.status === 'idea');
+                },
+
+                get platformPublished() {
+                    if (!this.activePlatform) return [];
+                    return this.posts.filter(p => p.platformId === this.activePlatform.id && p.status === 'published');
+                },
+
+                get activePostFormatBlocks() {
+                    const fmt = this.formats.find(f => f.id === this.currentPost.formatId);
+                    return fmt ? fmt.blocks : [];
+                },
+
+                get syncStatusClass() {
+                    switch(this.syncStatus) {
+                        case 'synced': return 'bg-emerald-500';
+                        case 'syncing': return 'bg-amber-500 animate-pulse';
+                        case 'error': return 'bg-red-500';
+                        default: return 'bg-zinc-600';
+                    }
+                },
+
+                get syncStatusLabel() {
+                    switch(this.syncStatus) {
+                        case 'synced': return 'Синхронизировано';
+                        case 'syncing': return 'Синхронизация...';
+                        case 'error': return 'Ошибка синка';
+                        default: return 'Локально';
+                    }
+                },
+
+                get syncStatusText() {
+                    switch(this.syncStatus) {
+                        case 'synced': return 'Синхронизировано с GitHub Gist';
+                        case 'syncing': return 'Синхронизация с GitHub...';
+                        case 'error': return 'Ошибка синхронизации Gist';
+                        default: return 'Работа в локальном режиме';
+                    }
+                },
+
+                initApp() {
+                    const savedPlatforms = localStorage.getItem('cp_platforms_v1');
+                    if (savedPlatforms) { try { this.platforms = JSON.parse(savedPlatforms); } catch(e){} }
+
+                    const savedFormats = localStorage.getItem('cp_formats_v1');
+                    if (savedFormats) { try { this.formats = JSON.parse(savedFormats); } catch(e){} }
+
+                    const savedPosts = localStorage.getItem('cp_posts_v1');
+                    if (savedPosts) { try { this.posts = JSON.parse(savedPosts); } catch(e){} }
+
+                    this.githubToken = localStorage.getItem('cp_github_token') || '';
+                    this.gistId = localStorage.getItem('cp_gist_id') || '';
+
+                    if (this.githubToken) {
+                        this.syncWithGist();
+                    }
+
+                    this.$nextTick(() => {
+                        if (window.lucide && window.lucide.createIcons) lucide.createIcons();
+                    });
+
+                    this.$watch('currentScreen', () => {
+                        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                    });
+                    this.$watch('platformTab', () => {
+                        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                    });
+                },
+
+                saveData() {
+                    localStorage.setItem('cp_platforms_v1', JSON.stringify(this.platforms));
+                    localStorage.setItem('cp_formats_v1', JSON.stringify(this.formats));
+                    localStorage.setItem('cp_posts_v1', JSON.stringify(this.posts));
+
+                    if (this.githubToken) {
+                        this.debouncedSyncGist();
+                    }
+                },
+
+                debouncedSyncGist() {
+                    clearTimeout(this._syncTimer);
+                    this._syncTimer = setTimeout(() => this.syncWithGist(), 2000);
+                },
+
+                selectPlatform(p) {
+                    this.activePlatform = p;
+                    this.currentScreen = 'platform_detail';
+                    this.platformTab = 'ideas';
+                },
+
+                navigateBack() {
+                    this.currentScreen = 'platforms';
+                    this.activePlatform = null;
+                },
+
+                getPlatformStats(platformId) {
+                    const pPosts = this.posts.filter(p => p.platformId === platformId);
+                    const scheduled = pPosts.filter(p => p.scheduledDate).length;
+                    const ideas = pPosts.filter(p => !p.scheduledDate || p.status === 'idea').length;
+                    return { scheduled, ideas };
+                },
+
+                createPlatform() {
+                    if (!this.newPlatform.name.trim()) return;
+                    const p = {
+                        id: 'plat_' + Date.now(),
+                        name: this.newPlatform.name.trim(),
+                        desc: this.newPlatform.desc.trim(),
+                        color: this.newPlatform.color || '#39d353',
+                        icon: this.newPlatform.name.charAt(0).toUpperCase()
+                    };
+                    this.platforms.push(p);
+                    this.newPlatform = { name: '', desc: '', color: '#39d353' };
+                    this.openNewPlatformModal = false;
+                    this.saveData();
+                },
+
+                addNewFormatBlock() {
+                    this.newFormatBlocks.push({ key: 'b_' + Date.now(), label: '', placeholder: '' });
+                },
+
+                removeNewFormatBlock(idx) {
+                    this.newFormatBlocks.splice(idx, 1);
+                },
+
+                saveNewFormat() {
+                    if (!this.newFormatName.trim() || this.newFormatBlocks.length === 0) {
+                        alert('Введите название и добавьте хотя бы один блок');
+                        return;
+                    }
+                    const fmt = {
+                        id: 'fmt_' + Date.now(),
+                        name: this.newFormatName.trim(),
+                        color: '#' + Math.floor(Math.random()*16777215).toString(16),
+                        blocks: this.newFormatBlocks.map((b, i) => ({
+                            key: 'block_' + i + '_' + Date.now(),
+                            label: b.label || ('Блок ' + (i+1)),
+                            placeholder: b.placeholder || ''
+                        }))
+                    };
+                    this.formats.push(fmt);
+                    this.newFormatName = '';
+                    this.newFormatBlocks = [];
+                    this.saveData();
+                    this.openFormatsManager = false;
+                    alert('Формат успешно создан!');
+                },
+
+                deleteFormat(fmtId) {
+                    if (confirm('Удалить этот формат?')) {
+                        this.formats = this.formats.filter(f => f.id !== fmtId);
+                        this.saveData();
+                    }
+                },
+
+                getFormatName(fmtId) {
+                    const f = this.formats.find(x => x.id === fmtId);
+                    return f ? f.name : 'Формат';
+                },
+
+                getBlockLabel(fmtId, blockKey) {
+                    const f = this.formats.find(x => x.id === fmtId);
+                    if (!f) return blockKey;
+                    const b = f.blocks.find(x => x.key === blockKey);
+                    return b ? b.label : blockKey;
+                },
+
+                openNewPostModal() {
+                    if (!this.activePlatform) return;
+                    const defaultFormat = this.formats[0] ? this.formats[0].id : '';
+                    this.editingPostId = null;
+                    this.currentPost = {
+                        platformId: this.activePlatform.id,
+                        formatId: defaultFormat,
+                        title: '',
+                        blocks: {},
+                        scheduledDate: '',
+                        status: 'idea',
+                        results: { views: '', likes: '', leads: '' }
+                    };
+                    this.openPostModal = true;
+                },
+
+                openNewPostModalForFormat(fmtId) {
+                    if (!this.activePlatform) return;
+                    this.editingPostId = null;
+                    this.currentPost = {
+                        platformId: this.activePlatform.id,
+                        formatId: fmtId,
+                        title: '',
+                        blocks: {},
+                        scheduledDate: '',
+                        status: 'idea',
+                        results: { views: '', likes: '', leads: '' }
+                    };
+                    this.openPostModal = true;
+                },
+
+                editPost(post) {
+                    this.editingPostId = post.id;
+                    this.currentPost = JSON.parse(JSON.stringify(post));
+                    this.openPostModal = true;
+                },
+
+                closePostModal() {
+                    this.openPostModal = false;
+                    this.editingPostId = null;
+                },
+
+                savePost() {
+                    if (!this.currentPost.title.trim() && !this.currentPost.formatId) return;
+                    if (this.editingPostId) {
+                        const idx = this.posts.findIndex(p => p.id === this.editingPostId);
+                        if (idx !== -1) {
+                            this.posts[idx] = { ...this.posts[idx], ...this.currentPost };
+                        }
+                    } else {
+                        const newP = {
+                            id: 'post_' + Date.now(),
+                            ...this.currentPost,
+                            createdAt: new Date().toISOString()
+                        };
+                        this.posts.unshift(newP);
+                    }
+                    this.saveData();
+                    this.closePostModal();
+                },
+
+                deletePost(postId) {
+                    if (confirm('Удалить эту идею/пост?')) {
+                        this.posts = this.posts.filter(p => p.id !== postId);
+                        this.saveData();
+                    }
+                },
+
+                getStitchedPostText(post) {
+                    if (!post || !post.formatId || !post.blocks) return '';
+                    const fmt = this.formats.find(f => f.id === post.formatId);
+                    if (!fmt) return '';
+                    let textParts = [];
+                    if (post.title) {
+                        textParts.push(`📌 ${post.title}\n`);
+                    }
+                    for (let b of fmt.blocks) {
+                        let val = post.blocks[b.key];
+                        if (val && val.trim()) {
+                            textParts.push(val.trim());
+                        }
+                    }
+                    return textParts.join('\n\n');
+                },
+
+                copyStitchedPost(post) {
+                    const text = this.getStitchedPostText(post);
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert('Готовый пост скопирован в буфер обмена!');
+                    });
+                },
+
+                copyGptPromptForPost(post) {
+                    const fmt = this.formats.find(f => f.id === post.formatId);
+                    const fmtName = fmt ? fmt.name : 'Пост';
+                    const structure = fmt ? fmt.blocks.map(b => `- ${b.label} (${b.placeholder})`).join('\n') : '';
+                    
+                    const prompt = `Привет! Помоги мне написать контент для поста.
+Тема / Идея: "${post.title || 'Без названия'}"
+Формат: ${fmtName}
+
+Структура по блокам, которую нужно строго заполнить:
+${structure}
+
+Напиши сильный, вовлекающий текст для каждого блока на основе темы. Выдай ответ четко по блокам.`;
+
+                    navigator.clipboard.writeText(prompt).then(() => {
+                        alert('Промпт для ChatGPT скопирован! Вставьте его в чат с AI.');
+                    });
+                },
+
+                schedulePostModal(post) {
+                    this.schedulingPost = post;
+                    this.scheduleDateInput = post.scheduledDate || new Date().toISOString().split('T')[0];
+                    this.openScheduleModal = true;
+                },
+
+                confirmScheduleDate() {
+                    if (this.schedulingPost) {
+                        this.schedulingPost.scheduledDate = this.scheduleDateInput;
+                        this.schedulingPost.status = 'published';
+                        this.saveData();
+                        this.openScheduleModal = false;
+                        this.schedulingPost = null;
+                    }
+                },
+
+                clearScheduleDate() {
+                    if (this.schedulingPost) {
+                        this.schedulingPost.scheduledDate = '';
+                        this.schedulingPost.status = 'idea';
+                        this.saveData();
+                        this.openScheduleModal = false;
+                        this.schedulingPost = null;
+                    }
+                },
+
+                createPostForDate(dateStr) {
+                    if (!this.activePlatform) return;
+                    const defaultFormat = this.formats[0] ? this.formats[0].id : '';
+                    const newP = {
+                        id: 'post_' + Date.now(),
+                        platformId: this.activePlatform.id,
+                        formatId: defaultFormat,
+                        title: 'Пост на ' + dateStr,
+                        blocks: {},
+                        scheduledDate: dateStr,
+                        status: 'published',
+                        results: { views: '', likes: '', leads: '' },
+                        createdAt: new Date().toISOString()
+                    };
+                    this.posts.unshift(newP);
+                    this.saveData();
+                },
+
+                shiftWeek(dir) {
+                    this.weekOffset += dir;
+                },
+
+                get currentWeekLabel() {
+                    const start = this.getStartOfWeek(this.weekOffset);
+                    const end = new Date(start);
+                    end.setDate(end.getDate() + 6);
+                    return `${start.getDate()} ${this.getMonthName(start)} - ${end.getDate()} ${this.getMonthName(end)}`;
+                },
+
+                get currentWeekDays() {
+                    const start = this.getStartOfWeek(this.weekOffset);
+                    let days = [];
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+                    for (let i = 0; i < 7; i++) {
+                        let d = new Date(start);
+                        d.setDate(d.getDate() + i);
+                        let dateStr = d.toISOString().split('T')[0];
+                        days.push({
+                            dayName: dayNames[i],
+                            dayNum: d.getDate(),
+                            dateStr: dateStr,
+                            isToday: dateStr === todayStr
+                        });
+                    }
+                    return days;
+                },
+
+                getStartOfWeek(offsetWeeks) {
+                    let d = new Date();
+                    let day = d.getDay();
+                    let diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                    let monday = new Date(d.setDate(diff));
+                    monday.setDate(monday.getDate() + (offsetWeeks * 7));
+                    monday.setHours(0,0,0,0);
+                    return monday;
+                },
+
+                getMonthName(date) {
+                    const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+                    return months[date.getMonth()];
+                },
+
+                getPostsForDate(dateStr) {
+                    if (!this.activePlatform) return [];
+                    return this.posts.filter(p => p.platformId === this.activePlatform.id && p.scheduledDate === dateStr);
+                },
+
+                formatDate(isoStr) {
+                    if (!isoStr) return '';
+                    const d = new Date(isoStr);
+                    return `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
+                },
+
+                saveGithubSettings() {
+                    localStorage.setItem('cp_github_token', this.githubToken.trim());
+                    localStorage.setItem('cp_gist_id', this.gistId.trim());
+                    alert('Настройки GitHub сохранены!');
+                    this.openSettingsModal = false;
+                    this.syncWithGist();
+                },
+
+                async syncWithGist() {
+                    if (!this.githubToken) return;
+                    this.syncStatus = 'syncing';
+                    try {
+                        if (!this.gistId) {
+                            let res = await fetch('https://api.github.com/gists', {
+                                headers: { 'Authorization': `token ${this.githubToken}` }
+                            });
+                            if (res.ok) {
+                                let gists = await res.json();
+                                let existing = gists.find(g => g.description === 'ContentPlannerData');
+                                if (existing) {
+                                    this.gistId = existing.id;
+                                    localStorage.setItem('cp_gist_id', this.gistId);
+                                }
+                            }
+                        }
+
+                        const payload = {
+                            platforms: this.platforms,
+                            formats: this.formats,
+                            posts: this.posts,
+                            updatedAt: new Date().toISOString()
+                        };
+
+                        if (this.gistId) {
+                            let res = await fetch(`https://api.github.com/gists/${this.gistId}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Authorization': `token ${this.githubToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    description: 'ContentPlannerData',
+                                    files: {
+                                        'content_plan.json': {
+                                            content: JSON.stringify(payload, null, 2)
+                                        }
+                                    }
+                                })
+                            });
+                            if (res.ok) {
+                                this.syncStatus = 'synced';
+                            } else {
+                                this.syncStatus = 'error';
+                            }
+                        } else {
+                            let res = await fetch('https://api.github.com/gists', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `token ${this.githubToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    description: 'ContentPlannerData',
+                                    public: false,
+                                    files: {
+                                        'content_plan.json': {
+                                            content: JSON.stringify(payload, null, 2)
+                                        }
+                                    }
+                                })
+                            });
+                            if (res.ok) {
+                                let data = await res.json();
+                                this.gistId = data.id;
+                                localStorage.setItem('cp_gist_id', this.gistId);
+                                this.syncStatus = 'synced';
+                            } else {
+                                this.syncStatus = 'error';
+                            }
+                        }
+                    } catch (e) {
+                        this.syncStatus = 'error';
+                    }
+                },
+
+                exportMarkdownBackup() {
+                    let md = `# Контент План и Студия\n\nЭкспорт от ${new Date().toLocaleDateString()}\n\n`;
+                    for (let p of this.platforms) {
+                        md += `## Площадка: ${p.name}\n\n`;
+                        const pPosts = this.posts.filter(x => x.platformId === p.id);
+                        for (let post of pPosts) {
+                            md += `### ${post.title || 'Без названия'} (${post.scheduledDate ? 'Дата: ' + post.scheduledDate : 'Идея'})\n`;
+                            const fmt = this.formats.find(f => f.id === post.formatId);
+                            if (fmt) {
+                                for (let b of fmt.blocks) {
+                                    if (post.blocks[b.key]) {
+                                        md += `**${b.label}:**\n${post.blocks[b.key]}\n\n`;
+                                    }
+                                }
+                            }
+                            md += `---\n\n`;
+                        }
+                    }
+
+                    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `content_plan_${new Date().toISOString().split('T')[0]}.md`;
+                    a.click();
+                },
+
+                exportJsonBackup() {
+                    const data = {
+                        platforms: this.platforms,
+                        formats: this.formats,
+                        posts: this.posts
+                    };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `content_planner_backup_${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
