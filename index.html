@@ -51,11 +51,10 @@
         .slide-animate { animation: slideIn 0.3s ease-out; }
         
         /* Стили сетки из трекера */
-        .habit-card {
-            max-width: 340px !important;
-            width: 100% !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
         }
         .habit-heatmap-grid {
             display: grid;
@@ -175,7 +174,18 @@
 
                 <!-- Calendar Heatmap (Removed from here, moved to main list) -->
 
-                <div class="flex items-center space-x-2"></div>
+                <!-- Tabs: Bank of Ideas / Calendar / Archive -->
+                <div class="flex items-center space-x-4 border-b border-[#30363d] pb-2">
+                    <button @click="platformTab = 'ideas'" :class="platformTab === 'ideas' ? 'text-white font-bold' : 'text-zinc-500'" class="text-xs transition">
+                        Идеи (<span x-text="platformIdeas.length"></span>)
+                    </button>
+                    <button @click="platformTab = 'calendar'" :class="platformTab === 'calendar' ? 'text-white font-bold' : 'text-zinc-500'" class="text-xs transition">
+                        План
+                    </button>
+                    <button @click="platformTab = 'archive'" :class="platformTab === 'archive' ? 'text-white font-bold' : 'text-zinc-500'" class="text-xs transition">
+                        Архив
+                    </button>
+                </div>
 
                 <!-- TAB 1: IDEAS BANK -->
                 <template x-if="platformTab === 'ideas'">
@@ -288,22 +298,17 @@
                                     </div>
 
                                     <!-- Results / Metrics Input Section -->
-                                    <div class="p-3 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2">
-                                        <div class="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">Результаты / Метрики поста</div>
-                                        <div class="grid grid-cols-3 gap-2">
-                                            <div>
-                                                <label class="text-[10px] text-zinc-500">Просмотры / Охват</label>
-                                                <input type="text" x-model="post.results.views" @input="saveData()" placeholder="напр. 5.2k" class="w-full mt-1 px-2.5 py-1 rounded-lg bg-[#21262d] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
+                                    <div class="space-y-0.5 pt-2">
+                                        <template x-for="metric in ['Охват', 'Удержание', 'Подписки', 'Переходы', 'Обращения', 'Записи']" :key="metric">
+                                            <div class="flex items-center justify-between py-1.5">
+                                                <span class="text-xs text-zinc-400" x-text="metric"></span>
+                                                <input type="number" 
+                                                       x-model="post.results[metric]" 
+                                                       @input="saveData()" 
+                                                       placeholder="0" 
+                                                       class="w-16 bg-transparent text-right text-xs font-bold text-white outline-none">
                                             </div>
-                                            <div>
-                                                <label class="text-[10px] text-zinc-500">Лайки / Реакции</label>
-                                                <input type="text" x-model="post.results.likes" @input="saveData()" placeholder="напр. 340" class="w-full mt-1 px-2.5 py-1 rounded-lg bg-[#21262d] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
-                                            </div>
-                                            <div>
-                                                <label class="text-[10px] text-zinc-500">Лиды / Заявки / $</label>
-                                                <input type="text" x-model="post.results.leads" @input="saveData()" placeholder="напр. 12 лидов" class="w-full mt-1 px-2.5 py-1 rounded-lg bg-[#21262d] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
-                                            </div>
-                                        </div>
+                                        </template>
                                     </div>
                                 </div>
                             </template>
