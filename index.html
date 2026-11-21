@@ -51,10 +51,19 @@
         .slide-animate { animation: slideIn 0.3s ease-out; }
         
         /* Стили сетки из трекера */
+        .habit-card {
+            max-width: 340px !important;
+            width: 100% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
         .habit-heatmap-grid {
             display: grid;
             grid-template-columns: repeat(12, minmax(0, 1fr));
             gap: 4px !important;
+            max-width: 310px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
         }
         .heatmap-cell {
             aspect-ratio: 1;
@@ -79,12 +88,12 @@
         <div class="flex items-center space-x-4">
             <!-- Cloud Sync Status Indicator -->
             <div class="flex items-center" :title="syncStatusText">
-                <span class="w-2.5 h-2.5 rounded-full" :class="syncStatusClass"></span>
-            </div>
-            
-            <button @click="openSettingsModal = true" class="text-zinc-400 hover:text-white transition active:scale-95" title="Настройки">
-                <i data-lucide="settings" class="w-6 h-6"></i>
-            </button>
+            <span class="w-2 h-2 rounded-full" :class="syncStatusClass"></span>
+        </div>
+        
+        <button @click="openSettingsModal = true" class="text-zinc-400 hover:text-white transition active:scale-95" title="Настройки">
+            <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
         </div>
     </header>
 
@@ -98,44 +107,64 @@
                 <!-- Platform Cards -->
                 <div class="space-y-6">
                     <template x-for="p in platforms" :key="p.id">
-                        <div class="space-y-3">
-                            <!-- Площадка (клик по ней ведет внутрь) -->
-                            <div @click="selectPlatform(p)" class="group relative cursor-pointer transition active:opacity-70 flex items-center justify-between">
-                                <h3 class="text-sm font-bold text-white transition truncate" x-text="p.name"></h3>
-                                <div class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 transition">
-                                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        <div class="space-y-2 habit-card">
+                            <div @click="selectPlatform(p)" class="flex items-center justify-between px-1 cursor-pointer group relative">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs font-bold text-white group-hover:text-emerald-400 transition" x-text="p.name"></span>
+                                    <span 
+                                        x-data="{ showMonthName: false, currentDisplayedMonth: '' }"
+                                        x-init="
+                                            const updateMonthDisplay = () => {
+                                                const date = new Date(new Date().getFullYear(), new Date().getMonth() + (platformOffsets[p.id] || 0), 1);
+                                                currentDisplayedMonth = formatDateMonthYear(date);
+                                                showMonthName = true;
+                                                clearTimeout(this._monthNameTimer);
+                                                this._monthNameTimer = setTimeout(() => { showMonthName = false; }, 2000);
+                                            };
+                                            
+                                            $watch('platformOffsets.' + p.id, updateMonthDisplay);
+                                            updateMonthDisplay(); // Показать при первой загрузке
+                                        "
+                                        x-show="showMonthName" 
+                                        x-transition:enter="transition ease-out duration-300" 
+                                        x-transition:enter-start="opacity-0 translate-y-1" 
+                                        x-transition:enter-end="opacity-100 translate-y-0"
+                                        x-transition:leave="transition ease-in duration-300 absolute right-0"
+                                        x-transition:leave-end="opacity-0 translate-y-1"
+                                        class="text-[10px] text-zinc-500 font-medium whitespace-nowrap"
+                                        x-text="currentDisplayedMonth"
+                                    ></span>
                                 </div>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-zinc-600 group-hover:text-white transition"></i>
                             </div>
 
-                                <div class="grid grid-cols-12 gap-1.5 habit-heatmap-grid" 
-                                     @touchstart="handleTouchStart($event)" 
-                                     @touchend="handleTouchEnd($event, p.id)">
-                                    <template x-for="cell in getMonthGrid(p.id)" :key="cell.dateStr">
-                                        <div @click="selectPlatform(p); platformTab = 'calendar'; scheduleDateInput = cell.dateStr"
-                                             class="aspect-square rounded-[3px] cursor-pointer transition active:scale-90"
-                                             :class="[getColorClass(cell.intensity), cell.isNextMonth ? 'opacity-55' : '']"
-                                             :title="cell.dateStr">
-                                        </div>
-                                    </template>
-                                </div>
-                                    </template>
-                                </div>
+                            <div class="relative overflow-hidden" 
+                                 x-data="{ direction: 0 }" 
+                                 @touchstart="handleTouchStart($event)" 
+                                 @touchend="handleTouchEnd($event, p.id)">
+                                <template :key="p.id + '-' + (platformOffsets[p.id] || 0)" 
+                                          x-if="!isAnimating" 
+                                          x-transition:enter="transform ease-out duration-300" 
+                                          :x-transition:enter-start="direction === 1 ? 'translate-x-full' : '-translate-x-full'" 
+                                          x-transition:enter-end="translate-x-0"
+                                          x-transition:leave="transform ease-in duration-300 absolute w-full top-0 left-0"
+                                          :x-transition:leave-end="direction === 1 ? '-translate-x-full' : 'translate-x-full'">
+                                    <div class="grid grid-cols-12 gap-1.5 habit-heatmap-grid">
+                                        <template x-for="cell in getMonthGrid(p.id)" :key="cell.dateStr">
+                                            <div @click="selectPlatform(p); platformTab = 'calendar'; scheduleDateInput = cell.dateStr"
+                                                 class="aspect-square rounded-[3px] cursor-pointer transition active:scale-90"
+                                                 :class="[getColorClass(cell.intensity), cell.isNextMonth ? 'opacity-55' : '', isToday(cell.dateStr) ? 'ring-1 ring-white' : '']"
+                                                 :title="cell.dateStr">
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </template>
                 </div>
 
-                <!-- Global Management Buttons -->
-                <div class="pt-4 border-t border-[#30363d] flex items-center justify-between">
-                    <button @click="openFormatsManager = true" class="px-4 py-2 rounded-xl bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-xs font-semibold text-zinc-300 hover:text-white transition flex items-center space-x-2">
-                        <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
-                        <span>Конструктор форматов постов</span>
-                    </button>
-                    <button @click="exportMarkdownBackup()" class="px-3 py-2 rounded-xl bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] text-xs font-semibold text-zinc-400 hover:text-white transition flex items-center space-x-1.5" title="Экспорт в Markdown файл">
-                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                        <span>Экспорт .md</span>
-                    </button>
-                </div>
+
 
             </div>
         </template>
@@ -147,17 +176,7 @@
 
                 <!-- Calendar Heatmap (Removed from here, moved to main list) -->
 
-                <div class="flex items-center space-x-1 bg-[#161b22] p-1 rounded-xl border border-[#30363d]">
-                    <button @click="platformTab = 'ideas'" :class="platformTab === 'ideas' ? 'bg-[#21262d] text-white font-bold shadow' : 'text-zinc-400 hover:text-zinc-200'" class="flex-1 py-2 rounded-lg text-xs transition text-center">
-                        Банк идей (<span x-text="platformIdeas.length"></span>)
-                    </button>
-                    <button @click="platformTab = 'calendar'" :class="platformTab === 'calendar' ? 'bg-[#21262d] text-white font-bold shadow' : 'text-zinc-400 hover:text-zinc-200'" class="flex-1 py-2 rounded-lg text-xs transition text-center">
-                        Календарь / План
-                    </button>
-                    <button @click="platformTab = 'archive'" :class="platformTab === 'archive' ? 'bg-[#21262d] text-white font-bold shadow' : 'text-zinc-400 hover:text-zinc-200'" class="flex-1 py-2 rounded-lg text-xs transition text-center">
-                        Архив / Результаты
-                    </button>
-                </div>
+                <div class="flex items-center space-x-2"></div>
 
                 <!-- TAB 1: IDEAS BANK -->
                 <template x-if="platformTab === 'ideas'">
@@ -477,8 +496,17 @@
         <div class="space-y-4">
             <div class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Настройки</div>
             
-            <button @click="openNewPlatformModal = true; openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-emerald-400">
+            <button @click="openNewPlatformModal = true; openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-white">
                 + Добавить площадку
+            </button>
+            <button @click="openFormatsManager = true; openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-white">
+                Конструктор форматов
+            </button>
+            <button @click="exportMarkdownBackup(); openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-white">
+                Экспорт .md
+            </button>
+            <button @click="exportJsonBackup(); openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-white">
+                Экспорт JSON
             </button>
 
             <div class="pt-4 border-t border-[#30363d] space-y-3">
@@ -646,15 +674,20 @@
                 currentDate: new Date(),
                 platformOffsets: {}, // Смещение для каждой площадки
 
+                isAnimating: false, // Флаг для блокировки свайпов во время анимации
+
                 changeMonth(platformId, delta) {
-                    this.platformOffsets[platformId] = (this.platformOffsets[platformId] || 0) + delta;
-                    // Анимация: находим элемент сетки и запускаем анимацию
-                    const el = document.getElementById('heatmap-' + platformId);
-                    if (el) {
-                        el.classList.remove('slide-animate');
-                        void el.offsetWidth; // Триггер для перезапуска анимации
-                        el.classList.add('slide-animate');
-                    }
+                    if (this.isAnimating) return; // Блокируем свайп, если анимация активна
+                    this.isAnimating = true;
+
+                    const oldOffset = this.platformOffsets[platformId] || 0;
+                    const newOffset = oldOffset + delta;
+                    this.platformOffsets[platformId] = newOffset;
+                    
+                    // Разрешаем новый свайп после завершения анимации
+                    setTimeout(() => {
+                        this.isAnimating = false;
+                    }, 300); // Длительность CSS-перехода
                 },
 
                 handleTouchStart(e) {
@@ -712,6 +745,11 @@
                     if (postsOnDate.length === 0) return 0;
                     if (postsOnDate.some(p => p.status === 'published')) return 2;
                     return 1;
+                },
+
+                isToday(dateStr) {
+                    if (!dateStr) return false;
+                    return dateStr === new Date().toISOString().split('T')[0];
                 },
 
                 getColorClass(intensity) {
@@ -1119,6 +1157,11 @@ ${structure}
                     if (!isoStr) return '';
                     const d = new Date(isoStr);
                     return `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
+                },
+
+                formatDateMonthYear(date) {
+                    const options = { year: 'numeric', month: 'long' };
+                    return date.toLocaleDateString('ru-RU', options);
                 },
 
                 saveGithubSettings() {
