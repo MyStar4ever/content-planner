@@ -63,6 +63,18 @@
             margin-right: auto !important;
         }
 
+        .habit-card {
+            max-width: 340px !important;
+            width: 100% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
         .habit-heatmap-grid {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
@@ -150,7 +162,7 @@
                                     x-transition:enter-end="translate-x-0"
                                     x-transition:leave="transform ease-in duration-300 absolute w-full top-0 left-0"
                                     :x-transition:leave-end="direction === 1 ? '-translate-x-full' : 'translate-x-full'"
-                                    class="grid grid-cols-12 gap-1.5 habit-heatmap-grid"
+                                    class="grid grid-cols-12 gap-1 habit-heatmap-grid"
                                 >
                                     <template x-for="cell in getMonthGrid(p.id)" :key="cell.dateStr">
                                         <div @click="selectPlatform(p); platformTab = 'calendar'; scheduleDateInput = cell.dateStr"
