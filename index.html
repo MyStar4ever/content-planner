@@ -112,6 +112,7 @@
                             <div @click="selectPlatform(p)" class="flex items-center justify-between px-1 cursor-pointer group relative">
                                 <div class="flex items-center space-x-2">
                                     <span class="text-xs font-bold text-white group-hover:text-emerald-400 transition" x-text="p.name"></span>
+                                    <span class="text-xs text-zinc-500" x-show="getPlatformIdeasCount(p.id) > 0" x-text="'(' + getPlatformIdeasCount(p.id) + ')'"></span>
                                     <span 
                                         x-data="{ showMonthName: false, currentDisplayedMonth: '' }"
                                         x-init="
@@ -782,6 +783,10 @@
                 get scheduledThisWeekCount() {
                     const days = this.currentWeekDays.map(d => d.dateStr);
                     return this.posts.filter(p => p.scheduledDate && days.includes(p.scheduledDate)).length;
+                },
+
+                getPlatformIdeasCount(platformId) {
+                    return this.posts.filter(p => p.platformId === platformId && p.status === 'idea').length;
                 },
 
                 get platformIdeas() {
