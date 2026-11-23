@@ -98,15 +98,16 @@
             left: 0;
             right: 0;
             overflow-y: auto;
-            padding-top: calc(env(safe-area-inset-top, 40px) + 50px);
-            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 60px);
-            mask-image: linear-gradient(to bottom, transparent 0px, black 50px, black calc(100% - 60px), transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 50px, black calc(100% - 60px), transparent 100%);
+            padding-top: calc(env(safe-area-inset-top, 20px) + 40px);
+            padding-bottom: 0px; /* Снизу убрали лишний отступ */
+            /* Растворение только сверху, снизу четкий край */
+            mask-image: linear-gradient(to bottom, transparent 0px, black 35px, black 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 35px, black 100%);
         }
         .content-inner {
             max-width: 448px;
             margin: 0 auto;
-            padding: 0 16px 80px 16px;
+            padding: 0 16px 120px 16px;
         }
 
     </style>
