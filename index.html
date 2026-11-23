@@ -215,52 +215,54 @@
                         <div class="space-y-2.5">
                             <template x-for="post in platformIdeas" :key="post.id">
                                 <div class="p-4 rounded-2xl bg-[#161b22] border border-[#30363d] space-y-3" x-data="{ openMenu: false, openStatusDropdown: false }">
-                                    <div class="flex items-start justify-between">
-                                        <div class="space-y-1.5 min-w-0 pr-2 flex-1">
-                                            <div class="flex items-center space-x-2 flex-wrap gap-y-1">
-                                                <!-- Status Dropdown Selector -->
-                                                <div class="relative">
-                                                    <button @click="openStatusDropdown = !openStatusDropdown" 
-                                                            class="px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center space-x-1 transition active:scale-95 cursor-pointer"
-                                                            :class="getStatusBadgeClass(post.status)">
-                                                        <span x-text="getStatusLabel(post.status)"></span>
-                                                        <i data-lucide="chevron-down" class="w-3 h-3"></i>
-                                                    </button>
-                                                    <!-- Status Menu -->
-                                                    <div x-show="openStatusDropdown" @click.away="openStatusDropdown = false" class="absolute left-0 mt-1 w-52 bg-[#161b22] border border-[#30363d] rounded-xl shadow-2xl p-1 z-50 modal-enter" x-cloak>
-                                                        <button @click="setPostStatus(post, 'idea'); openStatusDropdown = false" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-zinc-300 hover:bg-[#21262d] flex items-center space-x-2">
-                                                            <span class="w-2 h-2 rounded-full bg-zinc-400"></span>
-                                                            <span>Идея</span>
+                                        <div class="flex items-start justify-between">
+                                            <div class="space-y-1.5 min-w-0 flex-1">
+                                                <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                                                    <!-- Status Dropdown Selector -->
+                                                    <div class="relative">
+                                                        <button @click="openStatusDropdown = !openStatusDropdown" 
+                                                                class="px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center space-x-1 transition active:scale-95 cursor-pointer"
+                                                                :class="getStatusBadgeClass(post.status)">
+                                                            <span x-text="getStatusLabel(post.status)"></span>
+                                                            <i data-lucide="chevron-down" class="w-3 h-3"></i>
                                                         </button>
-                                                        <button @click="setPostStatus(post, 'scheduled'); openStatusDropdown = false" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-pink-400 hover:bg-[#21262d] flex items-center space-x-2">
-                                                            <span class="w-2 h-2 rounded-full bg-pink-500"></span>
-                                                            <span>Отложено</span>
-                                                        </button>
-                                                        <button @click="setPostStatus(post, 'results_pending'); openStatusDropdown = false" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-amber-400 hover:bg-[#21262d] flex items-center space-x-2">
-                                                            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                                                            <span>Ждем результаты</span>
-                                                        </button>
-                                                        <button @click="setPostStatus(post, 'published'); openStatusDropdown = false" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-emerald-400 hover:bg-[#21262d] flex items-center space-x-2">
-                                                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                                            <span>Опубликовано</span>
-                                                        </button>
+                                                        <!-- Status Menu -->
+                                                        <div x-show="openStatusDropdown" @click.away="openStatusDropdown = false" class="absolute left-0 mt-1 w-52 bg-[#161b22] border border-[#30363d] rounded-xl shadow-2xl p-1 z-50 modal-enter" x-cloak>
+                                                            <button @click="setPostStatus(post, 'idea'); openStatusDropdown = false" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-zinc-300 hover:bg-[#21262d] flex items-center space-x-2">
+                                                                <span class="w-2 h-2 rounded-full bg-zinc-400"></span>
+                                                                <span>Идея</span>
+                                                            </button>
+                                                            <button @click="setPostStatus(post, 'scheduled'); openStatusDropdown = false" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-pink-400 hover:bg-[#21262d] flex items-center space-x-2">
+                                                                <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                                                                <span>Отложено</span>
+                                                            </button>
+                                                            <button @click="setPostStatus(post, 'results_pending'); openStatusDropdown = false" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-amber-400 hover:bg-[#21262d] flex items-center space-x-2">
+                                                                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                                                                <span>Ждем результаты</span>
+                                                            </button>
+                                                            <button @click="setPostStatus(post, 'published'); openStatusDropdown = false" class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-emerald-400 hover:bg-[#21262d] flex items-center space-x-2">
+                                                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                                                <span>Опубликовано</span>
+                                                            </button>
+                                                        </div>
                                                     </div>
+
+                                                    <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#21262d] text-zinc-400 border border-[#30363d]" x-text="getFormatName(post.formatId)"></span>
+                                                    
+                                                    <template x-if="post.scheduledDate">
+                                                        <button @click="schedulePostModal(post)" 
+                                                                class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition hover:opacity-80 flex items-center space-x-1 border-[#30363d] text-zinc-400 bg-transparent">
+                                                            <i data-lucide="clock" class="w-3 h-3"></i>
+                                                            <span x-text="formatDateHumanTime(post.scheduledDate, post.scheduledTime || '00:00')"></span>
+                                                        </button>
+                                                    </template>
                                                 </div>
 
-                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#21262d] text-zinc-400 border border-[#30363d]" x-text="getFormatName(post.formatId)"></span>
-                                                <span class="text-[10px] text-zinc-500" x-text="formatDate(post.createdAt)"></span>
-
-                                                <template x-if="post.scheduledDate">
-                                                    <button @click="schedulePostModal(post)" 
-                                                            class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition hover:opacity-80 flex items-center space-x-1"
-                                                            :class="post.status === 'published' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : (post.status === 'scheduled' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-[#21262d] text-zinc-400 border-[#30363d]')">
-                                                        <span>📅</span>
-                                                        <span x-text="formatDateHuman(post.scheduledDate)"></span>
-                                                    </button>
-                                                </template>
+                                                <div class="flex items-center justify-between">
+                                                    <h3 class="text-sm font-bold text-white pt-1 truncate flex-1" x-text="post.title || 'Без названия'"></h3>
+                                                    <span class="text-[10px] text-zinc-500 whitespace-nowrap pl-2" x-text="formatTelegramDate(post.createdAt)"></span>
+                                                </div>
                                             </div>
-                                            <h3 class="text-sm font-bold text-white pt-1" x-text="post.title || 'Без названия'"></h3>
-                                        </div>
                                         <div class="relative">
                                             <button @click="openMenu = !openMenu" class="p-2 text-zinc-400 hover:text-white transition">
                                                 <i data-lucide="more-vertical" class="w-5 h-5"></i>
@@ -647,6 +649,10 @@
                     <label class="text-xs text-zinc-400">Выберите дату публикации</label>
                     <input type="date" x-model="scheduleDateInput" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
                 </div>
+                <div>
+                    <label class="text-xs text-zinc-400">Время публикации</label>
+                    <input type="time" x-model="scheduleTimeInput" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
+                </div>
 
                 <div class="flex items-center space-x-2 pt-2">
                     <button @click="confirmScheduleDate()" class="flex-1 py-2.5 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
@@ -724,15 +730,17 @@
                     formatId: 'reels_classic',
                     title: '',
                     blocks: {},
-                scheduledDate: '',
-                status: 'idea',
-                resultsCheckDate: '',
-                results: { views: '', likes: '', leads: '' }
+                    scheduledDate: '',
+                    scheduledTime: '12:00',
+                    status: 'idea',
+                    resultsCheckDate: '',
+                    results: { views: '', likes: '', leads: '' }
                 },
 
                 // Scheduling target
                 schedulingPost: null,
                 scheduleDateInput: '',
+                scheduleTimeInput: '12:00',
 
                 // Calendar week view
                 weekOffset: 0,
@@ -805,11 +813,31 @@
                     return this.getIntensityForPlatform(this.activePlatform.id, dateStr);
                 },
 
-                formatDateHuman(dateStr) {
+                formatDateHumanTime(dateStr, timeStr) {
                     if (!dateStr) return '';
                     const date = new Date(dateStr);
-                    const options = { weekday: 'short', day: 'numeric', month: 'short' };
-                    return date.toLocaleDateString('ru-RU', options);
+                    const now = new Date();
+                    
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    const dayAfterTomorrow = new Date(today);
+                    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+                    
+                    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                    
+                    let dayName = '';
+                    if (dateOnly.getTime() === today.getTime()) {
+                        dayName = 'сегодня';
+                    } else if (dateOnly.getTime() === tomorrow.getTime()) {
+                        dayName = 'завтра';
+                    } else if (dateOnly.getTime() === dayAfterTomorrow.getTime()) {
+                        dayName = 'послезавтра';
+                    } else {
+                        dayName = date.toLocaleDateString('ru-RU', { weekday: 'long' });
+                    }
+                    
+                    return `публикация ${dayName} в ${timeStr}`;
                 },
 
                 getIntensityForPlatform(platformId, dateStr) {
@@ -1204,12 +1232,14 @@ ${structure}
                 schedulePostModal(post) {
                     this.schedulingPost = post;
                     this.scheduleDateInput = post.scheduledDate || new Date().toISOString().split('T')[0];
+                    this.scheduleTimeInput = post.scheduledTime || '12:00';
                     this.openScheduleModal = true;
                 },
 
                 confirmScheduleDate() {
                     if (this.schedulingPost) {
                         this.schedulingPost.scheduledDate = this.scheduleDateInput;
+                        this.schedulingPost.scheduledTime = this.scheduleTimeInput;
                         if (!this.schedulingPost.status || this.schedulingPost.status === 'idea') {
                             this.schedulingPost.status = 'scheduled';
                         }
@@ -1300,10 +1330,28 @@ ${structure}
                     return this.posts.filter(p => p.platformId === this.activePlatform.id && p.scheduledDate === dateStr);
                 },
 
-                formatDate(isoStr) {
+                formatTelegramDate(isoStr) {
                     if (!isoStr) return '';
-                    const d = new Date(isoStr);
-                    return `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`;
+                    const date = new Date(isoStr);
+                    const now = new Date();
+                    
+                    const diffMs = now - date;
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    
+                    // Сегодня: время
+                    if (diffDays === 0) {
+                        return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    }
+                    // Вчера: 'вчера'
+                    if (diffDays === 1) {
+                        return 'вчера';
+                    }
+                    // Неделя: день недели (сб, вс, пн)
+                    if (diffDays < 7) {
+                        return date.toLocaleDateString('ru-RU', { weekday: 'short' });
+                    }
+                    // Старее: 08.11
+                    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
                 },
 
                 formatDateMonthYear(date) {
