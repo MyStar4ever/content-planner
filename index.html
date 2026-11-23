@@ -25,6 +25,13 @@
                             600: '#21262d',
                             500: '#30363d',
                             400: '#8b949e',
+                        },
+                        github: {
+                            0: '#161b22',
+                            1: '#0e4429',
+                            2: '#006d32',
+                            3: '#26a641',
+                            4: '#39d353'
                         }
                     }
                 }
@@ -65,6 +72,7 @@
         .habit-heatmap-grid {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
+            gap: 4px !important;
             width: 100% !important;
         }
 
@@ -78,7 +86,6 @@
             }
             .habit-heatmap-grid {
                 max-width: 310px !important;
-                gap: 4px !important;
                 margin-left: auto !important;
                 margin-right: auto !important;
             }
@@ -162,7 +169,7 @@
                                     x-transition:enter-end="translate-x-0"
                                     x-transition:leave="transform ease-in duration-300 absolute w-full top-0 left-0"
                                     :x-transition:leave-end="direction === 1 ? '-translate-x-full' : 'translate-x-full'"
-                                    class="grid grid-cols-12 gap-1.5 habit-heatmap-grid"
+                                    class="grid grid-cols-12 habit-heatmap-grid"
                                 >
                                     <template x-for="cell in getMonthGrid(p.id)" :key="cell.dateStr">
                                         <div @click="selectPlatform(p); platformTab = 'calendar'; scheduleDateInput = cell.dateStr"
@@ -812,11 +819,11 @@
                 },
 
                 getColorClass(intensity) {
-                    if (intensity === 4) return 'bg-[#2ea043]'; // Зеленый
-                    if (intensity === 3) return 'bg-[#f59e0b]'; // Желтый
-                    if (intensity === 2) return 'bg-[#ec4899]'; // Розовый
-                    if (intensity === 1) return 'bg-[#525a65]'; // Серый
-                    return 'bg-[#161b22]'; // Фоновый
+                    if (intensity === 4) return 'bg-github-4';
+                    if (intensity === 3) return 'bg-github-3';
+                    if (intensity === 2) return 'bg-github-2';
+                    if (intensity === 1) return 'bg-github-1';
+                    return 'bg-github-0';
                 },
 
                 getStatusBadgeClass(status) {
