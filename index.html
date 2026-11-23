@@ -93,20 +93,19 @@
 
         .fade-scroll {
             position: fixed;
-            top: 56px; 
+            top: 0;
             bottom: 0;
             left: 0;
             right: 0;
             overflow-y: auto;
-            /* Плавное растворение только по краям */
-            mask-image: linear-gradient(to bottom, transparent 0px, black 15px, black calc(100% - 15px), transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 15px, black calc(100% - 15px), transparent 100%);
+            padding-top: 56px;
+            mask-image: linear-gradient(to bottom, transparent 0px, black 20px, black calc(100% - 20px), transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 20px, black calc(100% - 20px), transparent 100%);
         }
-        /* Убираем лишний отступ, который был в <main> */
         .content-inner {
-            max-width: 448px; /* max-w-md */
+            max-width: 448px;
             margin: 0 auto;
-            padding: 0 16px 100px 16px;
+            padding: 10px 16px 100px 16px;
         }
 
     </style>
@@ -114,23 +113,23 @@
 <body class="min-h-screen pb-28 antialiased selection:bg-emerald-500 selection:text-black" x-data="contentPlannerApp()" x-init="initApp()">
 
     <!-- Header / Navbar (Clean, minimalist iOS style) -->
-    <header class="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-transparent">
-        <div class="flex items-center space-x-2">
+    <header class="fixed top-0 left-0 right-0 z-40 bg-transparent px-4 py-3 flex items-center justify-between pointer-events-none">
+        <div class="flex items-center space-x-2 pointer-events-auto">
             <template x-if="currentScreen !== 'platforms'">
-                <button @click="navigateBack()" class="text-zinc-400 hover:text-white transition p-2 rounded-full hover:bg-zinc-800/50 shadow-sm active:scale-95">
-                    <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                <button @click="navigateBack()" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
                 </button>
             </template>
         </div>
 
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2 pointer-events-auto">
             <template x-if="currentScreen === 'platforms'">
-                <button @click="openSettingsModal = true" class="text-zinc-400 hover:text-white transition p-2 rounded-full hover:bg-zinc-800/50 shadow-sm active:scale-95" title="Настройки">
+                <button @click="openSettingsModal = true" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95" title="Настройки">
                     <i data-lucide="settings" class="w-5 h-5"></i>
                 </button>
             </template>
             <template x-if="currentScreen === 'platform_detail'">
-                <button @click="openSettingsModal = true" class="text-zinc-400 hover:text-white transition p-2 rounded-full hover:bg-zinc-800/50 shadow-sm active:scale-95" title="Меню">
+                <button @click="openSettingsModal = true" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95" title="Меню">
                     <i data-lucide="more-horizontal" class="w-5 h-5"></i>
                 </button>
             </template>
