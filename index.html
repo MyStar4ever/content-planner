@@ -47,15 +47,15 @@
 <body class="h-screen overflow-hidden bg-black text-white font-sans antialiased" x-data="contentPlannerApp()" x-init="initApp()">
 
     <!-- Header (Fixed & Transparent) -->
-    <header class="fixed top-0 left-0 right-0 z-40 bg-transparent px-4 pt-[calc(env(safe-area-inset-top,20px)+5px)] pb-3 flex items-center justify-between pointer-events-none">
-        <div class="flex items-center space-x-2 pointer-events-auto">
+    <header class="fixed top-0 left-0 right-0 z-40 bg-transparent px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-2" style="padding-top: env(safe-area-inset-top, 20px);">
             <template x-if="currentScreen !== 'platforms'">
                 <button @click="navigateBack()" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95">
                     <i data-lucide="chevron-left" class="w-5 h-5"></i>
                 </button>
             </template>
         </div>
-        <div class="flex items-center space-x-2 pointer-events-auto">
+        <div class="flex items-center space-x-2" style="padding-top: env(safe-area-inset-top, 20px);">
             <template x-if="currentScreen === 'platforms'">
                 <button @click="openSettingsModal = true" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95" title="Настройки">
                     <i data-lucide="settings" class="w-5 h-5"></i>
