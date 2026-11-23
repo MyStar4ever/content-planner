@@ -125,7 +125,7 @@
             <div class="space-y-5 modal-enter">
                 
                 <!-- Platform Cards -->
-                <div class="space-y-6">
+                <div class="px-2 space-y-6">
                     <template x-for="p in platforms" :key="p.id">
                         <div class="space-y-2 habit-card">
                             <div @click="selectPlatform(p)" class="flex items-center justify-between px-1 cursor-pointer group relative">
@@ -169,7 +169,7 @@
                                     x-transition:enter-end="translate-x-0"
                                     x-transition:leave="transform ease-in duration-300 absolute w-full top-0 left-0"
                                     :x-transition:leave-end="direction === 1 ? '-translate-x-full' : 'translate-x-full'"
-                                    class="grid grid-cols-12 habit-heatmap-grid"
+                                    class="grid grid-cols-12 gap-1.5 habit-heatmap-grid"
                                 >
                                     <template x-for="cell in getMonthGrid(p.id)" :key="cell.dateStr">
                                         <div @click="selectPlatform(p); platformTab = 'calendar'; scheduleDateInput = cell.dateStr"
