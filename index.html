@@ -72,7 +72,6 @@
         .habit-heatmap-grid {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
-            gap: 4px !important;
             width: 100% !important;
         }
 
@@ -86,6 +85,7 @@
             }
             .habit-heatmap-grid {
                 max-width: 310px !important;
+                gap: 4px !important;
                 margin-left: auto !important;
                 margin-right: auto !important;
             }
@@ -856,28 +856,25 @@
 
                 checkPostStatuses() {
                     const now = new Date();
+                    const todayStr = now.toISOString().split('T')[0];
                     this.posts.forEach(post => {
                         if (!post.scheduledDate) return;
                         
-                        const scheduledDate = new Date(post.scheduledDate);
-                        
                         // Переход в "Опубликовано" (Зеленый)
-                        if (post.status === 'scheduled' && now >= scheduledDate) {
+                        if (post.status === 'scheduled' && todayStr >= post.scheduledDate) {
                             post.status = 'published';
                             // Устанавливаем resultsCheckDate через 7 дней после scheduledDate, если его еще нет
                             if (!post.resultsCheckDate) {
-                                const checkDate = new Date(scheduledDate);
-                                checkDate.setDate(scheduledDate.getDate() + 7);
-                                post.resultsCheckDate = checkDate.toISOString().split('T')[0];
+                                const schedDate = new Date(post.scheduledDate);
+                                schedDate.setDate(schedDate.getDate() + 7);
+                                post.resultsCheckDate = schedDate.toISOString().split('T')[0];
                             }
                         }
                         
-                        // Переход в "Ждем результаты" (Желтый) - если наступила дата проверки и статус еще не 'results_pending'
-                        if (post.status === 'published' && post.resultsCheckDate && now >= new Date(post.resultsCheckDate)) {
+                        // Переход в "Ждем результаты" (Желтый) - если наступила дата проверки
+                        if (post.status === 'published' && post.resultsCheckDate && todayStr >= post.resultsCheckDate) {
                             post.status = 'results_pending';
                         }
-                        // Если результаты были введены, то статус остается 'published' (зеленый)
-                        // (Это подразумевается, так как мы не меняем статус обратно, если результаты уже есть)
                     });
                     this.saveData();
                 },
