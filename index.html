@@ -92,8 +92,21 @@
         }
 
         .fade-scroll {
-            mask-image: linear-gradient(to bottom, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
+            position: fixed;
+            top: 56px; 
+            bottom: 0;
+            left: 0;
+            right: 0;
+            overflow-y: auto;
+            /* Плавное растворение только по краям */
+            mask-image: linear-gradient(to bottom, transparent 0px, black 15px, black calc(100% - 15px), transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 15px, black calc(100% - 15px), transparent 100%);
+        }
+        /* Убираем лишний отступ, который был в <main> */
+        .content-inner {
+            max-width: 448px; /* max-w-md */
+            margin: 0 auto;
+            padding: 0 16px 100px 16px;
         }
 
     </style>
@@ -101,29 +114,32 @@
 <body class="min-h-screen pb-28 antialiased selection:bg-emerald-500 selection:text-black" x-data="contentPlannerApp()" x-init="initApp()">
 
     <!-- Header / Navbar (Clean, minimalist iOS style) -->
-    <header class="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+    <header class="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-transparent">
         <div class="flex items-center space-x-2">
             <template x-if="currentScreen !== 'platforms'">
-                <button @click="navigateBack()" class="text-zinc-400 hover:text-white transition active:scale-95">
+                <button @click="navigateBack()" class="text-zinc-400 hover:text-white transition p-2 rounded-full hover:bg-zinc-800/50 shadow-sm active:scale-95">
                     <i data-lucide="chevron-left" class="w-6 h-6"></i>
                 </button>
             </template>
         </div>
 
-        <div class="flex items-center space-x-4">
-            <!-- Cloud Sync Status Indicator -->
-            <div class="flex items-center" :title="syncStatusText">
-            <span class="w-2 h-2 rounded-full" :class="syncStatusClass"></span>
-        </div>
-        
-        <button @click="openSettingsModal = true" class="text-zinc-400 hover:text-white transition active:scale-95" title="Настройки">
-            <i data-lucide="settings" class="w-4 h-4"></i>
-        </button>
+        <div class="flex items-center space-x-2">
+            <template x-if="currentScreen === 'platforms'">
+                <button @click="openSettingsModal = true" class="text-zinc-400 hover:text-white transition p-2 rounded-full hover:bg-zinc-800/50 shadow-sm active:scale-95" title="Настройки">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+            </template>
+            <template x-if="currentScreen === 'platform_detail'">
+                <button @click="openSettingsModal = true" class="text-zinc-400 hover:text-white transition p-2 rounded-full hover:bg-zinc-800/50 shadow-sm active:scale-95" title="Меню">
+                    <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                </button>
+            </template>
         </div>
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-md mx-auto px-4 pt-14 space-y-5 fade-scroll">
+    <main class="fade-scroll">
+        <div class="content-inner space-y-5">
 
         <!-- ================= SCREEN 1: PLATFORMS ================= -->
         <template x-if="currentScreen === 'platforms'">
@@ -263,9 +279,9 @@
                                                     <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#21262d] text-zinc-400 border border-[#30363d]" x-text="getFormatName(post.formatId)"></span>
                                                 </div>
                                                 
-                                                <div class="flex items-center justify-between">
-                                                    <h3 class="text-sm font-bold text-white truncate flex-1" x-text="post.title || 'Без названия'"></h3>
-                                                    <span class="text-[10px] text-zinc-500 whitespace-nowrap pl-2" x-text="formatTelegramDate(post.createdAt)"></span>
+                                                <div class="flex items-start justify-between gap-2">
+                                                    <h3 class="text-sm font-bold text-white" x-text="post.title || 'Без названия'"></h3>
+                                                    <span class="text-[10px] text-zinc-500 whitespace-nowrap" x-text="formatTelegramDate(post.createdAt)"></span>
                                                 </div>
                                             </div>
                                         <div class="relative">
@@ -387,6 +403,7 @@
         </template>
 
     </main>
+    <div class="h-20"></div> <!-- Компенсация нижнего паддинга -->
 
 
     <!-- FLOATING ACTION BUTTON (FAB) IN BOTTOM RIGHT CORNER -->
