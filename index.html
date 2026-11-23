@@ -255,7 +255,7 @@
                                                             class="px-2 py-0.5 rounded-md text-[10px] font-bold border transition hover:opacity-80 flex items-center space-x-1"
                                                             :class="post.status === 'published' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : (post.status === 'scheduled' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-[#21262d] text-zinc-400 border-[#30363d]')">
                                                         <span>📅</span>
-                                                        <span x-text="post.scheduledDate"></span>
+                                                        <span x-text="formatDateHuman(post.scheduledDate)"></span>
                                                     </button>
                                                 </template>
                                             </div>
@@ -805,24 +805,36 @@
                     return this.getIntensityForPlatform(this.activePlatform.id, dateStr);
                 },
 
+                formatDateHuman(dateStr) {
+                    if (!dateStr) return '';
+                    const date = new Date(dateStr);
+                    const options = { weekday: 'short', day: 'numeric', month: 'short' };
+                    return date.toLocaleDateString('ru-RU', options);
+                },
+
                 getIntensityForPlatform(platformId, dateStr) {
                     const postsOnDate = this.posts.filter(p => p.platformId === platformId && p.scheduledDate === dateStr);
                     if (postsOnDate.length === 0) return 0;
+
+                    // Если есть пост, который запланирован на сегодня или будущее, он в приоритете (розовый)
+                    if (postsOnDate.some(p => p.status === 'scheduled')) return 2; 
+                    
                     if (postsOnDate.some(p => p.status === 'published')) return 4; // Зеленый
                     if (postsOnDate.some(p => p.status === 'results_pending')) return 3; // Желтый
-                    if (postsOnDate.some(p => p.status === 'scheduled')) return 2; // Розовый
                     return 1; // Серый (Идея)
                 },
 
                 isToday(dateStr) {
                     if (!dateStr) return false;
-                    return dateStr === new Date().toISOString().split('T')[0];
+                    const now = new Date();
+                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    return dateStr === todayStr;
                 },
 
                 getColorClass(intensity) {
                     if (intensity === 4) return 'bg-github-4';
                     if (intensity === 3) return 'bg-github-3';
-                    if (intensity === 2) return 'bg-github-2';
+                    if (intensity === 2) return 'bg-pink-500';
                     if (intensity === 1) return 'bg-github-1';
                     return 'bg-github-0';
                 },
@@ -843,35 +855,40 @@
 
                 setPostStatus(post, newStatus) {
                     post.status = newStatus;
-                if ((newStatus === 'scheduled' || newStatus === 'published' || newStatus === 'results_pending') && !post.scheduledDate) {
-                    this.schedulePostModal(post);
-                } else if (newStatus === 'idea') {
-                    post.scheduledDate = '';
-                    post.resultsCheckDate = '';
-                    this.saveData();
-                } else {
-                    this.saveData();
-                }
+                    if ((newStatus === 'scheduled' || newStatus === 'published' || newStatus === 'results_pending') && !post.scheduledDate) {
+                        this.schedulePostModal(post);
+                    } else if (newStatus === 'idea') {
+                        post.scheduledDate = '';
+                        post.resultsCheckDate = '';
+                        this.checkPostStatuses();
+                        this.saveData();
+                    } else {
+                        this.checkPostStatuses();
+                        this.saveData();
+                    }
                 },
 
                 checkPostStatuses() {
+                    // Используем локальную дату без учета часового пояса UTC
                     const now = new Date();
-                    const todayStr = now.toISOString().split('T')[0];
+                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                    
                     this.posts.forEach(post => {
                         if (!post.scheduledDate) return;
                         
-                        // Переход в "Опубликовано" (Зеленый)
-                        if (post.status === 'scheduled' && todayStr >= post.scheduledDate) {
+                        // Если пост запланирован и день настал (текущая дата СТРОГО БОЛЬШЕ даты публикации) — он становится опубликованным (Зеленый)
+                        if (post.status === 'scheduled' && todayStr > post.scheduledDate) {
                             post.status = 'published';
-                            // Устанавливаем resultsCheckDate через 7 дней после scheduledDate, если его еще нет
+                            
+                            // Авто-установка даты проверки (через 7 дней)
                             if (!post.resultsCheckDate) {
                                 const schedDate = new Date(post.scheduledDate);
                                 schedDate.setDate(schedDate.getDate() + 7);
-                                post.resultsCheckDate = schedDate.toISOString().split('T')[0];
+                                post.resultsCheckDate = `${schedDate.getFullYear()}-${String(schedDate.getMonth() + 1).padStart(2, '0')}-${String(schedDate.getDate()).padStart(2, '0')}`;
                             }
                         }
                         
-                        // Переход в "Ждем результаты" (Желтый) - если наступила дата проверки
+                        // Если опубликован и наступил день проверки — статус "Ждем результаты" (Желтый)
                         if (post.status === 'published' && post.resultsCheckDate && todayStr >= post.resultsCheckDate) {
                             post.status = 'results_pending';
                         }
@@ -1196,6 +1213,7 @@ ${structure}
                         if (!this.schedulingPost.status || this.schedulingPost.status === 'idea') {
                             this.schedulingPost.status = 'scheduled';
                         }
+                        this.checkPostStatuses(); // Обновляем статусы
                         this.saveData();
                         this.openScheduleModal = false;
                         this.schedulingPost = null;
@@ -1206,6 +1224,7 @@ ${structure}
                     if (this.schedulingPost) {
                         this.schedulingPost.scheduledDate = '';
                         this.schedulingPost.status = 'idea';
+                        this.checkPostStatuses(); // Обновляем статусы
                         this.saveData();
                         this.openScheduleModal = false;
                         this.schedulingPost = null;
