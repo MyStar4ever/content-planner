@@ -724,9 +724,10 @@
                     formatId: 'reels_classic',
                     title: '',
                     blocks: {},
-                    scheduledDate: '',
-                    status: 'idea',
-                    results: { views: '', likes: '', leads: '' }
+                scheduledDate: '',
+                status: 'idea',
+                resultsCheckDate: '',
+                results: { views: '', likes: '', leads: '' }
                 },
 
                 // Scheduling target
@@ -842,11 +843,15 @@
 
                 setPostStatus(post, newStatus) {
                     post.status = newStatus;
-                    if ((newStatus === 'scheduled' || newStatus === 'published' || newStatus === 'results_pending') && !post.scheduledDate) {
-                        this.schedulePostModal(post);
-                    } else {
-                        this.saveData();
-                    }
+                if ((newStatus === 'scheduled' || newStatus === 'published' || newStatus === 'results_pending') && !post.scheduledDate) {
+                    this.schedulePostModal(post);
+                } else if (newStatus === 'idea') {
+                    post.scheduledDate = '';
+                    post.resultsCheckDate = '';
+                    this.saveData();
+                } else {
+                    this.saveData();
+                }
                 },
 
                 checkPostStatuses() {
@@ -859,15 +864,20 @@
                         // Переход в "Опубликовано" (Зеленый)
                         if (post.status === 'scheduled' && now >= scheduledDate) {
                             post.status = 'published';
-                        }
-                        
-                        // Переход в "Ждем результаты" (Желтый) - через 24 часа после запланированной даты
-                        if (post.status === 'published') {
-                            const timeToResults = new Date(scheduledDate.getTime() + 24 * 60 * 60 * 1000);
-                            if (now >= timeToResults) {
-                                post.status = 'results_pending';
+                            // Устанавливаем resultsCheckDate через 7 дней после scheduledDate, если его еще нет
+                            if (!post.resultsCheckDate) {
+                                const checkDate = new Date(scheduledDate);
+                                checkDate.setDate(scheduledDate.getDate() + 7);
+                                post.resultsCheckDate = checkDate.toISOString().split('T')[0];
                             }
                         }
+                        
+                        // Переход в "Ждем результаты" (Желтый) - если наступила дата проверки и статус еще не 'results_pending'
+                        if (post.status === 'published' && post.resultsCheckDate && now >= new Date(post.resultsCheckDate)) {
+                            post.status = 'results_pending';
+                        }
+                        // Если результаты были введены, то статус остается 'published' (зеленый)
+                        // (Это подразумевается, так как мы не меняем статус обратно, если результаты уже есть)
                     });
                     this.saveData();
                 },
