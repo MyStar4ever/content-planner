@@ -47,15 +47,15 @@
 <body class="h-screen overflow-hidden bg-black text-white font-sans antialiased" x-data="contentPlannerApp()" x-init="initApp()">
 
     <!-- Header (Fixed & Transparent) -->
-    <header class="fixed top-0 left-0 right-0 z-40 bg-transparent px-4 py-3 flex items-center justify-between">
-        <div class="flex items-center space-x-2" style="padding-top: env(safe-area-inset-top, 20px);">
+    <header class="fixed top-0 left-0 right-0 z-40 bg-transparent px-4 flex items-center justify-between" style="padding-top: env(safe-area-inset-top, 20px); height: calc(env(safe-area-inset-top, 20px) + 56px);">
+        <div class="flex items-center space-x-2">
             <template x-if="currentScreen !== 'platforms'">
                 <button @click="navigateBack()" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95">
                     <i data-lucide="chevron-left" class="w-5 h-5"></i>
                 </button>
             </template>
         </div>
-        <div class="flex items-center space-x-2" style="padding-top: env(safe-area-inset-top, 20px);">
+        <div class="flex items-center space-x-2">
             <template x-if="currentScreen === 'platforms'">
                 <button @click="openSettingsModal = true" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95" title="Настройки">
                     <i data-lucide="settings" class="w-5 h-5"></i>
@@ -71,8 +71,8 @@
 
     <!-- Main Content Area (Scrollable with Fading) -->
     <main class="fixed inset-0 overflow-y-auto -webkit-overflow-scrolling-touch"
-          style="padding-top: calc(env(safe-area-inset-top, 20px) + 56px);
-                 padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 20px);
+          style="padding-top: calc(env(safe-area-inset-top, 20px) + 60px);
+                 padding-bottom: env(safe-area-inset-bottom, 20px);
                  mask-image: linear-gradient(to bottom, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);
                  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);">
         <div class="max-w-md mx-auto px-4 space-y-5 pb-28">
