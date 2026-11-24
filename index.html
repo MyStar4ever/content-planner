@@ -587,58 +587,75 @@
          class="fixed inset-0 z-[60] bg-black flex flex-col p-4 overflow-y-auto modal-enter" x-cloak>
         <div class="max-w-xl w-full mx-auto space-y-5 pb-20">
             <!-- Top bar -->
-            <div class="flex items-center justify-between pt-2 pb-2 border-b border-[#21262d]">
+            <div class="flex items-center justify-between pt-2 pb-2">
                 <div class="flex items-center space-x-2">
-                    <i data-lucide="lightbulb" class="w-5 h-5 text-amber-400"></i>
-                    <h3 class="text-base font-bold text-white">Лаборатория идей</h3>
+                    <i data-lucide="beaker" class="w-5 h-5 text-amber-400"></i>
+                    <h3 class="text-base font-bold text-white uppercase tracking-wider">Лаборатория идей</h3>
                 </div>
-                <button @click="openIdeaLab = false" class="p-2 text-zinc-400 hover:text-white transition">
+                <button @click="closeIdeaLab()" class="p-2 text-zinc-400 hover:text-white transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <p class="text-xs text-zinc-400">Набросайте варианты заголовка по формулам и выберите лучший кликом на зеленый чекмарк.</p>
-
-            <!-- 4 Formula Categories -->
-            <div class="space-y-6 pt-1">
-                <template x-for="cat in [
-                    { key: 'emotion', title: '1. Сильный образ или эмоции', placeholder: 'Шок! Как я потерял всё за один день...' },
-                    { key: 'contradiction', title: '2. Отрицание или противоречие', placeholder: 'Перестань делать это, если хочешь расти...' },
-                    { key: 'urgency', title: '3. Время или срочность', placeholder: 'Как выйти на новый уровень за 14 дней...' },
-                    { key: 'quantity', title: '4. Количество или сумма', placeholder: '5 способов сделать 500 000₽ с нуля...' }
-                ]" :key="cat.key">
-                    <div class="space-y-2.5 p-4 rounded-2xl border border-[#30363d] bg-transparent">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-white" x-text="cat.title"></span>
-                            <button @click="addIdeaLabItem(cat.key)" class="px-2.5 py-1 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-amber-400 text-xs font-bold transition flex items-center space-x-1 border border-[#30363d]">
-                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                                <span>Вариант</span>
+            <!-- Variants Selector -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Варианты идей</span>
+                    <button @click="addIdeaLabVariant()" class="p-1 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-amber-400 transition border border-[#30363d]">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <template x-for="(v, idx) in currentPost.ideaLab.variants" :key="idx">
+                        <div class="relative group">
+                            <button @click="currentPost.ideaLab.selectedIndex = idx" 
+                                    class="px-4 py-2 rounded-xl text-xs font-bold border transition-all"
+                                    :class="currentPost.ideaLab.selectedIndex === idx ? 'bg-amber-400/10 border-amber-400/50 text-amber-400' : 'bg-transparent border-[#30363d] text-zinc-500 hover:text-zinc-300'">
+                                <span x-text="'Идея ' + (idx + 1)"></span>
+                            </button>
+                            <button x-show="currentPost.ideaLab.variants.length > 1" 
+                                    @click="removeIdeaLabVariant(idx)" 
+                                    class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] opacity-0 group-hover:opacity-100 transition shadow-lg">
+                                <i data-lucide="x" class="w-2.5 h-2.5"></i>
                             </button>
                         </div>
-                        <div class="space-y-2 pt-1">
-                            <template x-for="(item, idx) in (currentPost.ideaLab ? currentPost.ideaLab[cat.key] : [])" :key="idx">
-                                <div class="flex items-center space-x-2">
-                                    <textarea x-model="currentPost.ideaLab[cat.key][idx]" 
-                                              :placeholder="cat.placeholder"
-                                              @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                                              x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
-                                              class="flex-1 px-3.5 py-2.5 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
-                                    
-                                    <button @click="applyIdeaLabText(currentPost.ideaLab[cat.key][idx])" 
-                                            class="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 transition flex items-center justify-center shrink-0" 
-                                            title="Использовать как главную идею">
-                                        <i data-lucide="check" class="w-4 h-4"></i>
-                                    </button>
-                                    <button @click="removeIdeaLabItem(cat.key, idx)" 
-                                            class="p-2.5 rounded-xl bg-transparent text-zinc-500 hover:text-red-400 transition flex items-center justify-center shrink-0 border border-transparent" 
-                                            title="Удалить">
-                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                    </button>
-                                </div>
-                            </template>
-                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Main Constructor Field -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-zinc-400 px-1">Результат (то, что будет в посте)</label>
+                <textarea x-model="currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex].text" 
+                          placeholder="Сформулируйте вашу идею здесь..." 
+                          @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                          x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
+                          class="w-full px-4 py-3.5 rounded-2xl bg-transparent text-white text-sm font-bold border border-[#30363d] focus:border-amber-400 outline-none resize-none overflow-hidden transition-colors"></textarea>
+            </div>
+
+            <!-- Formula Helpers -->
+            <div class="grid grid-cols-1 gap-4 pt-2">
+                <template x-for="fld in [
+                    { key: 'emotion', label: '1. Сильный образ или эмоции', placeholder: 'Шок! Как я потерял всё...' },
+                    { key: 'contradiction', label: '2. Отрицание или противоречие', placeholder: 'Перестаньте делать это...' },
+                    { key: 'urgency', label: '3. Время или срочность', placeholder: 'За 30 дней с нуля...' },
+                    { key: 'quantity', label: '4. Количество или сумма', placeholder: 'Как заработать 1 000 000₽...' }
+                ]" :key="fld.key">
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-zinc-500 uppercase px-1" x-text="fld.label"></label>
+                        <textarea x-model="currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex].formulas[fld.key]" 
+                                  :placeholder="fld.placeholder"
+                                  @input="updateIdeaFromFormulas(); this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                  x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
+                                  class="w-full px-3.5 py-2.5 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
                     </div>
                 </template>
+            </div>
+
+            <div class="pt-4">
+                <button @click="closeIdeaLab()" class="w-full py-3.5 rounded-2xl bg-[#21262d] hover:bg-[#30363d] text-white font-bold text-xs border border-[#30363d] transition active:scale-[0.98]">
+                    Готово
+                </button>
             </div>
         </div>
     </div>
@@ -838,7 +855,10 @@
                     status: 'idea',
                     resultsCheckDate: '',
                     results: { views: '', likes: '', leads: '' },
-                    ideaLab: { emotion: [''], contradiction: [''], urgency: [''], quantity: [''] }
+                    ideaLab: { 
+                        variants: [{ text: '', formulas: { emotion: '', contradiction: '', urgency: '', quantity: '' } }], 
+                        selectedIndex: 0 
+                    }
                 },
 
                 // Scheduling target
@@ -1241,7 +1261,10 @@
                         scheduledDate: '',
                         status: 'idea',
                         results: { views: '', likes: '', leads: '' },
-                        ideaLab: { emotion: [''], contradiction: [''], urgency: [''], quantity: [''] }
+                        ideaLab: { 
+                            variants: [{ text: '', formulas: { emotion: '', contradiction: '', urgency: '', quantity: '' } }], 
+                            selectedIndex: 0 
+                        }
                     };
                     this.openPostModal = true;
                 },
@@ -1257,7 +1280,10 @@
                         scheduledDate: '',
                         status: 'idea',
                         results: { views: '', likes: '', leads: '' },
-                        ideaLab: { emotion: [''], contradiction: [''], urgency: [''], quantity: [''] }
+                        ideaLab: { 
+                            variants: [{ text: '', formulas: { emotion: '', contradiction: '', urgency: '', quantity: '' } }], 
+                            selectedIndex: 0 
+                        }
                     };
                     this.openPostModal = true;
                 },
@@ -1265,53 +1291,67 @@
                 editPost(post) {
                     this.editingPostId = post.id;
                     this.currentPost = JSON.parse(JSON.stringify(post));
-                    if (!this.currentPost.ideaLab) {
-                        this.currentPost.ideaLab = { emotion: [''], contradiction: [''], urgency: [''], quantity: [''] };
+                    if (!this.currentPost.ideaLab || !this.currentPost.ideaLab.variants) {
+                        this.currentPost.ideaLab = { 
+                            variants: [{ text: post.title || '', formulas: { emotion: '', contradiction: '', urgency: '', quantity: '' } }], 
+                            selectedIndex: 0 
+                        };
                     }
                     this.openPostModal = true;
                 },
 
                 openIdeaLabModal() {
-                    if (!this.currentPost.ideaLab) {
-                        this.currentPost.ideaLab = {
-                            emotion: [''],
-                            contradiction: [''],
-                            urgency: [''],
-                            quantity: ['']
+                    if (!this.currentPost.ideaLab || !this.currentPost.ideaLab.variants) {
+                        this.currentPost.ideaLab = { 
+                            variants: [{ text: this.currentPost.title || '', formulas: { emotion: '', contradiction: '', urgency: '', quantity: '' } }], 
+                            selectedIndex: 0 
                         };
                     }
-                    ['emotion', 'contradiction', 'urgency', 'quantity'].forEach(k => {
-                        if (!this.currentPost.ideaLab[k] || this.currentPost.ideaLab[k].length === 0) {
-                            this.currentPost.ideaLab[k] = [''];
-                        }
-                    });
                     this.openIdeaLab = true;
                 },
 
-                addIdeaLabItem(catKey) {
-                    if (!this.currentPost.ideaLab) this.currentPost.ideaLab = {};
-                    if (!this.currentPost.ideaLab[catKey]) this.currentPost.ideaLab[catKey] = [];
-                    this.currentPost.ideaLab[catKey].push('');
+                addIdeaLabVariant() {
+                    this.currentPost.ideaLab.variants.push({ 
+                        text: '', 
+                        formulas: { emotion: '', contradiction: '', urgency: '', quantity: '' } 
+                    });
+                    this.currentPost.ideaLab.selectedIndex = this.currentPost.ideaLab.variants.length - 1;
                 },
 
-                removeIdeaLabItem(catKey, idx) {
-                    if (this.currentPost.ideaLab && this.currentPost.ideaLab[catKey]) {
-                        this.currentPost.ideaLab[catKey].splice(idx, 1);
+                removeIdeaLabVariant(idx) {
+                    if (this.currentPost.ideaLab.variants.length > 1) {
+                        this.currentPost.ideaLab.variants.splice(idx, 1);
+                        if (this.currentPost.ideaLab.selectedIndex >= this.currentPost.ideaLab.variants.length) {
+                            this.currentPost.ideaLab.selectedIndex = this.currentPost.ideaLab.variants.length - 1;
+                        }
+                    } else {
+                        // Если последний, просто очищаем
+                        this.currentPost.ideaLab.variants[0] = { text: '', formulas: { emotion: '', contradiction: '', urgency: '', quantity: '' } };
                     }
                 },
 
-                applyIdeaLabText(text) {
-                    if (text && text.trim()) {
-                        this.currentPost.title = text.trim();
-                        this.openIdeaLab = false;
-                        this.$nextTick(() => {
-                            const textareas = document.querySelectorAll('#openPostModal textarea');
-                            textareas.forEach(el => {
-                                el.style.height = '';
-                                el.style.height = el.scrollHeight + 'px';
-                            });
+                updateIdeaFromFormulas() {
+                    const variant = this.currentPost.ideaLab.variants[this.currentPost.ideaLab.selectedIndex];
+                    const f = variant.formulas;
+                    const parts = [f.emotion, f.contradiction, f.urgency, f.quantity].filter(x => x && x.trim());
+                    if (parts.length > 0) {
+                        variant.text = parts.join(' ');
+                    }
+                },
+
+                closeIdeaLab() {
+                    const variant = this.currentPost.ideaLab.variants[this.currentPost.ideaLab.selectedIndex];
+                    if (variant && variant.text) {
+                        this.currentPost.title = variant.text;
+                    }
+                    this.openIdeaLab = false;
+                    this.$nextTick(() => {
+                        const textareas = document.querySelectorAll('#openPostModal textarea');
+                        textareas.forEach(el => {
+                            el.style.height = '';
+                            el.style.height = el.scrollHeight + 'px';
                         });
-                    }
+                    });
                 },
 
                 closePostModal() {
