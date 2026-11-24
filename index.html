@@ -46,8 +46,8 @@
 </head>
 <body class="h-screen overflow-hidden bg-black text-white font-sans antialiased" x-data="contentPlannerApp()" x-init="initApp()">
 
-    <!-- Header (Fixed & Backdrop Blur) -->
-    <header class="fixed top-0 left-0 right-0 z-40 bg-black/60 backdrop-blur-xl px-4 flex items-center justify-between border-b border-[#30363d]/40" style="padding-top: env(safe-area-inset-top, 0px); height: calc(env(safe-area-inset-top, 0px) + 52px);">
+    <!-- Header (Transparent & Floating) -->
+    <header class="fixed top-0 left-0 right-0 z-40 bg-transparent px-4 flex items-center justify-between" style="padding-top: env(safe-area-inset-top, 0px); height: calc(env(safe-area-inset-top, 0px) + 48px);">
         <div class="flex items-center space-x-2">
             <template x-if="currentScreen !== 'platforms'">
                 <button @click="navigateBack()" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95">
@@ -69,9 +69,9 @@
         </div>
     </header>
 
-    <!-- Main Content Area (Scrollable with Fading / Blur) -->
+    <!-- Main Content Area (Scrollable with Blur Mask) -->
     <main class="fixed inset-0 overflow-y-auto -webkit-overflow-scrolling-touch"
-          style="padding-top: calc(env(safe-area-inset-top, 0px) + 56px);
+          style="padding-top: calc(env(safe-area-inset-top, 0px) + 48px);
                  padding-bottom: env(safe-area-inset-bottom, 0px);
                  mask-image: linear-gradient(to bottom, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);
                  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);">
@@ -226,6 +226,7 @@
                                             </button>
                                             <div x-show="openMenu" @click.away="openMenu = false" class="absolute right-0 mt-2 w-48 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl p-1 z-50 modal-enter" x-cloak>
                                                 <button @click="editPost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Редактировать</button>
+                                                <button @click="duplicatePost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-emerald-400 hover:bg-[#21262d] transition">👯 Создать копию</button>
                                                 <button @click="schedulePostModal(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Запланировать / Изменить дату</button>
                                                 <button @click="copyStitchedPost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Копировать пост</button>
                                                 <button @click="copyGptPromptForPost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Промпт для GPT</button>
@@ -1164,6 +1165,26 @@
                         this.posts = this.posts.filter(p => p.id !== postId);
                         this.saveData();
                     }
+                },
+
+                duplicatePost(post) {
+                    const newPost = JSON.parse(JSON.stringify(post));
+                    newPost.id = 'post_' + Date.now();
+                    delete newPost.parentId; // Убираем привязку если была
+                    
+                    // Добавляем префикс к заголовку
+                    const copyCount = this.posts.filter(p => p.title.includes(post.title)).length;
+                    newPost.title = `Копия ${copyCount}: ${post.title}`;
+                    
+                    newPost.status = 'idea';
+                    newPost.scheduledDate = '';
+                    newPost.scheduledTime = '12:00';
+                    newPost.results = { views: '', likes: '', leads: '' };
+                    newPost.createdAt = new Date().toISOString();
+                    
+                    this.posts.unshift(newPost);
+                    this.saveData();
+                    alert('Копия создана!');
                 },
 
                 getStitchedPostText(post) {
