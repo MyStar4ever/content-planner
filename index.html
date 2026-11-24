@@ -115,7 +115,7 @@
                                 <i data-lucide="chevron-right" class="w-4 h-4 text-zinc-600 group-hover:text-white transition"></i>
                             </div>
 
-                            <div class="relative overflow-hidden" 
+                            <div class="relative overflow-visible p-0.5" 
                                  x-data="{ direction: 0 }" 
                                  @touchstart="handleTouchStart($event)" 
                                  @touchend="handleTouchEnd($event, p.id, direction)">
@@ -306,15 +306,26 @@
                         <div class="space-y-3">
                             <template x-for="post in platformPublished" :key="post.id">
                                 <div class="p-4 rounded-2xl bg-[#161b22] border border-[#30363d] space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <div class="space-y-0.5">
-                                             <div class="flex items-center space-x-2">
-                                                 <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#21262d] text-zinc-300 border border-[#30363d]">Опубликовано</span>
-                                                 <span class="text-[10px] text-zinc-400" x-text="'Дата: ' + (post.scheduledDate || 'н/д')"></span>
-                                             </div>
-                                            <h3 class="text-sm font-bold text-white pt-1" x-text="post.title || 'Без названия'"></h3>
-                                        </div>
-                                    </div>
+                                     <div class="flex items-center justify-between">
+                                         <div class="space-y-0.5 w-full">
+                                              <div class="flex items-center justify-between">
+                                                  <div class="flex items-center space-x-2">
+                                                      <span class="px-2 py-0.5 rounded-md text-[10px] font-bold border" :class="getStatusBadgeClass(post.status)" x-text="getStatusLabel(post.status)"></span>
+                                                      <span class="text-[10px] text-zinc-400" x-text="'План: ' + (post.scheduledDate || 'н/д') + (post.scheduledTime ? ' ' + post.scheduledTime : '')"></span>
+                                                  </div>
+                                              </div>
+                                             <h3 class="text-sm font-bold text-white pt-1" x-text="post.title || 'Без названия'"></h3>
+                                         </div>
+                                     </div>
+
+                                     <!-- Results Check Date Edit -->
+                                     <div class="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-[#0d1117] border border-[#30363d] text-xs">
+                                         <span class="text-zinc-400">Проверить результаты до/в:</span>
+                                         <input type="date" 
+                                                x-model="post.resultsCheckDate" 
+                                                @change="checkPostStatuses(); saveData()" 
+                                                class="bg-transparent text-amber-400 font-bold outline-none text-right text-xs cursor-pointer">
+                                     </div>
 
                                     <!-- Results / Metrics Input Section -->
                                     <div class="space-y-0.5 pt-2">
@@ -611,6 +622,10 @@
                     <label class="text-xs text-zinc-400">Время публикации</label>
                     <input type="time" x-model="scheduleTimeInput" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-emerald-500 outline-none">
                 </div>
+                <div>
+                    <label class="text-xs text-zinc-400">Дата проверки результатов (желтый статус)</label>
+                    <input type="date" x-model="resultsCheckDateInput" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-amber-500 outline-none">
+                </div>
 
                 <div class="flex items-center space-x-2 pt-2">
                     <button @click="confirmScheduleDate()" class="flex-1 py-2.5 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
@@ -699,6 +714,7 @@
                 schedulingPost: null,
                 scheduleDateInput: '',
                 scheduleTimeInput: '12:00',
+                resultsCheckDateInput: '',
 
                 // Calendar week view
                 weekOffset: 0,
@@ -855,18 +871,18 @@
                 },
 
                 checkPostStatuses() {
-                    // Используем локальную дату без учета часового пояса UTC
                     const now = new Date();
-                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
                     
                     this.posts.forEach(post => {
                         if (!post.scheduledDate) return;
                         
-                        // Если пост запланирован и день настал (текущая дата СТРОГО БОЛЬШЕ даты публикации) — он становится опубликованным (Зеленый)
-                        if (post.status === 'scheduled' && todayStr > post.scheduledDate) {
+                        const postDateTime = new Date(post.scheduledDate + 'T' + (post.scheduledTime || '00:00'));
+                        
+                        // Если пост запланирован и время наступило -> Опубликовано (Зеленый)
+                        if (post.status === 'scheduled' && now >= postDateTime) {
                             post.status = 'published';
                             
-                            // Авто-установка даты проверки (через 7 дней)
+                            // Авто-установка даты проверки результатов (через 7 дней)
                             if (!post.resultsCheckDate) {
                                 const schedDate = new Date(post.scheduledDate);
                                 schedDate.setDate(schedDate.getDate() + 7);
@@ -874,9 +890,12 @@
                             }
                         }
                         
-                        // Если опубликован и наступил день проверки — статус "Ждем результаты" (Желтый)
-                        if (post.status === 'published' && post.resultsCheckDate && todayStr >= post.resultsCheckDate) {
-                            post.status = 'results_pending';
+                        // Если опубликован и наступил день проверки результатов — статус "Ждем результаты" (Желтый)
+                        if (post.status === 'published' && post.resultsCheckDate) {
+                            const checkDateTime = new Date(post.resultsCheckDate + 'T00:00:00');
+                            if (now >= checkDateTime) {
+                                post.status = 'results_pending';
+                            }
                         }
                     });
                     this.saveData();
@@ -913,7 +932,7 @@
 
                 get platformPublished() {
                     if (!this.activePlatform) return [];
-                    return this.posts.filter(p => p.platformId === this.activePlatform.id && p.status === 'published');
+                    return this.posts.filter(p => p.platformId === this.activePlatform.id && (p.status === 'published' || p.status === 'results_pending'));
                 },
 
                 get activePostFormatBlocks() {
@@ -965,6 +984,9 @@
                         this.syncWithGist();
                     }
                     this.checkPostStatuses();
+                    setInterval(() => {
+                        this.checkPostStatuses();
+                    }, 30000);
 
                     this.$nextTick(() => {
                         if (window.lucide && window.lucide.createIcons) lucide.createIcons();
@@ -1191,6 +1213,19 @@ ${structure}
                     this.schedulingPost = post;
                     this.scheduleDateInput = post.scheduledDate || new Date().toISOString().split('T')[0];
                     this.scheduleTimeInput = post.scheduledTime || '12:00';
+                    
+                    if (post.resultsCheckDate) {
+                        this.resultsCheckDateInput = post.resultsCheckDate;
+                    } else if (post.scheduledDate) {
+                        const d = new Date(post.scheduledDate);
+                        d.setDate(d.getDate() + 7);
+                        this.resultsCheckDateInput = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    } else {
+                        const d = new Date();
+                        d.setDate(d.getDate() + 7);
+                        this.resultsCheckDateInput = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    }
+                    
                     this.openScheduleModal = true;
                 },
 
@@ -1198,6 +1233,7 @@ ${structure}
                     if (this.schedulingPost) {
                         this.schedulingPost.scheduledDate = this.scheduleDateInput;
                         this.schedulingPost.scheduledTime = this.scheduleTimeInput;
+                        this.schedulingPost.resultsCheckDate = this.resultsCheckDateInput;
                         if (!this.schedulingPost.status || this.schedulingPost.status === 'idea') {
                             this.schedulingPost.status = 'scheduled';
                         }
