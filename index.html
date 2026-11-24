@@ -226,14 +226,38 @@
                                         <button @click="openMenu = !openMenu" class="p-2 text-zinc-400 hover:text-white transition">
                                             <i data-lucide="more-vertical" class="w-5 h-5"></i>
                                         </button>
-                                        <div x-show="openMenu" @click.away="openMenu = false" class="absolute right-0 mt-1 w-48 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl p-1 z-50 modal-enter" x-cloak>
-                                            <button @click="editPost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Редактировать</button>
-                                            <button @click="duplicatePost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-emerald-400 hover:bg-[#21262d] transition">👯 Создать копию</button>
-                                            <button @click="schedulePostModal(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Запланировать / Изменить дату</button>
-                                            <button @click="copyStitchedPost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Копировать пост</button>
-                                            <button @click="copyGptPromptForPost(post); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">Промпт для GPT</button>
+                                        <div x-show="openMenu" @click.away="openMenu = false" class="absolute right-0 mt-1 w-52 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl p-1.5 z-50 modal-enter" x-cloak>
+                                            <button @click="editPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                <i data-lucide="edit-3" class="w-3.5 h-3.5 opacity-60"></i>
+                                                <span>Редактировать</span>
+                                            </button>
+                                            <button @click="duplicatePost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                <i data-lucide="clipboard" class="w-3.5 h-3.5 opacity-60"></i>
+                                                <span>Дублировать</span>
+                                            </button>
+                                            <button @click="schedulePostModal(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                <i data-lucide="calendar" class="w-3.5 h-3.5 opacity-60"></i>
+                                                <span>Запланировать</span>
+                                            </button>
+                                            <button @click="
+                    const text = getStitchedPostText(post);
+                    navigator.clipboard.writeText(text).then(() => {
+                        // анимируем или тихо копируем
+                    });
+                    openMenu = false;
+                " class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                <i data-lucide="copy" class="w-3.5 h-3.5 opacity-60"></i>
+                                                <span>Копировать пост</span>
+                                            </button>
+                                            <button @click="copyGptPromptForPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                <i data-lucide="cpu" class="w-3.5 h-3.5 opacity-60"></i>
+                                                <span>Промпт для GPT</span>
+                                            </button>
                                             <div class="border-t border-[#30363d] my-1"></div>
-                                            <button @click="deletePost(post.id); openMenu = false" class="w-full text-left px-3 py-2 rounded-xl text-xs text-red-400 hover:bg-[#21262d] hover:text-red-300 transition">Удалить</button>
+                                            <button @click="deletePost(post.id); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                <span>Удалить</span>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -449,12 +473,26 @@
 
 
     <!-- ================= MODAL: NEW / EDIT POST (FILL FORMAT BLOCKS) ================= -->
-    <div x-show="openPostModal" class="fixed inset-0 z-50 bg-black flex flex-col p-4 overflow-y-auto modal-enter" x-cloak>
+    <div x-show="openPostModal" 
+         x-init="
+            $watch('openPostModal', value => {
+                if (value) {
+                    setTimeout(() => {
+                        document.querySelectorAll('#openPostModal textarea').forEach(el => {
+                            el.style.height = '';
+                            el.style.height = el.scrollHeight + 'px';
+                        });
+                    }, 50);
+                }
+            })
+         "
+         id="openPostModal"
+         class="fixed inset-0 z-50 bg-black flex flex-col p-4 overflow-y-auto modal-enter" x-cloak>
         <div class="max-w-xl w-full mx-auto space-y-5 pb-20">
-            <!-- Top bar -->
-            <div class="flex items-center justify-between pt-2 pb-2 border-b border-[#21262d]">
-                <h3 class="text-sm font-bold text-white" x-text="editingPostId ? 'Редактировать пост' : 'Новый пост'"></h3>
-                <button @click="closePostModal()" class="p-2 text-zinc-400 hover:text-white transition">
+             <!-- Top bar -->
+            <div class="flex items-center justify-between pt-2 pb-2">
+                <h3 class="text-sm font-bold text-white hidden"></h3>
+                <button @click="closePostModal()" class="p-2 text-zinc-400 hover:text-white transition ml-auto">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -462,13 +500,17 @@
             <!-- Post Title & Format Selector -->
             <div class="space-y-3">
                 <div>
-                    <label class="text-xs text-zinc-400 font-medium">Тема / Название</label>
-                    <input type="text" x-model="currentPost.title" placeholder="О чем этот пост..." class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                    <label class="text-xs text-zinc-400 font-medium">Идея</label>
+                    <textarea x-model="currentPost.title" 
+                              placeholder="О чем этот пост..." 
+                              @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                              x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
+                              class="w-full mt-1 px-3.5 py-3 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
                 </div>
 
                 <div>
                     <label class="text-xs text-zinc-400 font-medium">Формат</label>
-                    <select x-model="currentPost.formatId" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                    <select x-model="currentPost.formatId" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
                         <template x-for="fmt in formats" :key="fmt.id">
                             <option :value="fmt.id" x-text="fmt.name"></option>
                         </template>
@@ -485,34 +527,40 @@
                         </div>
                         <textarea x-model="currentPost.blocks[blockDef.key]" 
                                   placeholder="Введите текст..." 
-                                  oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                                  class="w-full px-3.5 py-3 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
+                                  @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                  x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
+                                  class="w-full px-3.5 py-3 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
                     </div>
                 </template>
             </div>
 
             <!-- LIVE PREVIEW & COPY BUTTON EXPLANATION -->
-            <div class="space-y-2 pt-2 border-t border-[#21262d]">
+            <div class="space-y-2 pt-2 border-t border-[#21262d]" x-data="{ copied: false }">
                 <div class="flex items-center justify-between">
                     <div>
-                        <span class="text-xs font-bold text-white">Готовый пост (Превью)</span>
-                        <p class="text-[10px] text-zinc-400">Автоматически собирает все блоки в единый текст для публикации</p>
+                        <span class="text-xs font-bold text-white">Preview</span>
                     </div>
-                    <button @click="copyStitchedPost(currentPost)" class="px-3 py-1.5 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white text-xs font-semibold transition flex items-center space-x-1.5">
-                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                        <span>Копировать весь текст</span>
-                    </button>
+                    <div>
+                        <button @click="
+                            const text = getStitchedPostText(currentPost);
+                            navigator.clipboard.writeText(text).then(() => {
+                                copied = true;
+                                setTimeout(() => copied = false, 2000);
+                            });
+                        " class="p-2 rounded-xl bg-transparent hover:bg-[#161b22] text-zinc-400 hover:text-white transition flex items-center justify-center border border-[#30363d]" title="Копировать превью">
+                            <i x-show="!copied" data-lucide="copy" class="w-4 h-4"></i>
+                            <i x-show="copied" data-lucide="check" class="w-4 h-4 text-emerald-400" x-cloak></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="p-3.5 rounded-xl bg-[#161b22] border border-[#30363d] text-xs text-zinc-300 whitespace-pre-wrap font-sans" x-text="getStitchedPostText(currentPost) || 'Здесь появится готовый текст поста после заполнения блоков...'"></div>
+                <div class="p-3.5 rounded-xl bg-transparent border border-[#30363d] text-xs text-zinc-300 whitespace-pre-wrap font-sans" x-text="getStitchedPostText(currentPost) || 'Здесь появится готовый текст поста после заполнения блоков...'"></div>
             </div>
 
             <!-- Save Buttons -->
-            <div class="flex items-center space-x-2 pt-4">
-                <button @click="savePost()" class="flex-1 py-3 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-bold text-xs transition border border-[#30363d]">
-                    Сохранить
-                </button>
-                <button @click="closePostModal()" class="px-5 py-3 rounded-xl bg-transparent hover:bg-[#161b22] text-zinc-400 hover:text-white text-xs font-semibold transition">
-                    Отмена
+            <div class="flex items-center justify-end pt-4" x-data="{ savedAnim: false }">
+                <button @click="savePost(); savedAnim = true; setTimeout(() => savedAnim = false, 2000); setTimeout(() => closePostModal(), 400)" class="p-3 rounded-xl bg-transparent hover:bg-[#161b22] text-zinc-300 hover:text-white transition flex items-center justify-center border border-[#30363d] relative" title="Сохранить">
+                    <i x-show="!savedAnim" data-lucide="check" class="w-5 h-5 text-emerald-400"></i>
+                    <i x-show="savedAnim" data-lucide="check" class="w-5 h-5 text-emerald-400 scale-125 transition-transform" x-cloak></i>
                 </button>
             </div>
         </div>
@@ -1209,9 +1257,7 @@
 
                 copyStitchedPost(post) {
                     const text = this.getStitchedPostText(post);
-                    navigator.clipboard.writeText(text).then(() => {
-                        alert('Готовый пост скопирован в буфер обмена!');
-                    });
+                    navigator.clipboard.writeText(text);
                 },
 
                 copyGptPromptForPost(post) {
