@@ -47,7 +47,7 @@
 <body class="h-screen overflow-hidden bg-black text-white font-sans antialiased" x-data="contentPlannerApp()" x-init="initApp()">
 
     <!-- Header (Fixed & Transparent) -->
-    <header class="fixed top-0 left-0 right-0 z-40 bg-transparent px-4 flex items-center justify-between" style="padding-top: env(safe-area-inset-top, 20px); height: calc(env(safe-area-inset-top, 20px) + 56px);">
+    <header class="fixed top-0 left-0 right-0 z-40 bg-transparent px-4 flex items-center justify-between" style="padding-top: env(safe-area-inset-top, 10px); height: calc(env(safe-area-inset-top, 10px) + 48px);">
         <div class="flex items-center space-x-2">
             <template x-if="currentScreen !== 'platforms'">
                 <button @click="navigateBack()" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95">
@@ -69,12 +69,10 @@
         </div>
     </header>
 
-    <!-- Main Content Area (Scrollable with Fading) -->
+    <!-- Main Content Area (Scrollable) -->
     <main class="fixed inset-0 overflow-y-auto -webkit-overflow-scrolling-touch"
-          style="padding-top: calc(env(safe-area-inset-top, 20px) + 60px);
-                 padding-bottom: env(safe-area-inset-bottom, 20px);
-                 mask-image: linear-gradient(to bottom, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);
-                 -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);">
+          style="padding-top: calc(env(safe-area-inset-top, 10px) + 52px);
+                 padding-bottom: env(safe-area-inset-bottom, 10px);">
         <div class="max-w-md mx-auto px-4 space-y-5 pb-28">
 
         <!-- ================= SCREEN 1: PLATFORMS ================= -->
