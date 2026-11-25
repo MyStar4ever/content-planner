@@ -42,6 +42,11 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        textarea {
+            field-sizing: content;
+            resize: none;
+        }
     </style>
 </head>
 <body class="h-screen overflow-hidden bg-black text-white font-sans antialiased" x-data="contentPlannerApp()" x-init="initApp()">
@@ -527,13 +532,12 @@
          x-init="
             $watch('openPostModal', value => {
                 if (value) {
-                    setTimeout(() => {
+                    $nextTick(() => {
                         if (window.lucide) lucide.createIcons();
-                        document.querySelectorAll('#openPostModal textarea').forEach(el => {
-                            el.style.height = '';
-                            el.style.height = el.scrollHeight + 'px';
-                        });
-                    }, 50);
+                        autoResizeAll('#openPostModal');
+                    });
+                    setTimeout(() => autoResizeAll('#openPostModal'), 50);
+                    setTimeout(() => autoResizeAll('#openPostModal'), 150);
                 }
             })
          "
@@ -559,8 +563,9 @@
                     </div>
                     <textarea x-model="currentPost.title" 
                               placeholder="О чем этот пост..." 
-                              @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                              x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
+                              @input="autoResize($el)"
+                              x-effect="$nextTick(() => autoResize($el))"
+                              x-init="$nextTick(() => autoResize($el))"
                               class="w-full mt-1 px-3.5 py-3 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
                 </div>
 
@@ -583,8 +588,9 @@
                         </div>
                         <textarea x-model="currentPost.blocks[blockDef.key]" 
                                   placeholder="Введите текст..." 
-                                  @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                                  x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
+                                  @input="autoResize($el)"
+                                  x-effect="$nextTick(() => autoResize($el))"
+                                  x-init="$nextTick(() => autoResize($el))"
                                   class="w-full px-3.5 py-3 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
                     </div>
                 </template>
@@ -630,10 +636,14 @@
                 if (value) {
                     $nextTick(() => {
                         if (window.lucide) lucide.createIcons();
+                        autoResizeAll('#openIdeaLab');
                     });
+                    setTimeout(() => autoResizeAll('#openIdeaLab'), 50);
+                    setTimeout(() => autoResizeAll('#openIdeaLab'), 150);
                 }
             })
          "
+         id="openIdeaLab"
          class="fixed inset-0 z-[60] bg-black flex flex-col p-4 overflow-y-auto modal-enter" x-cloak>
         <div class="max-w-xl w-full mx-auto space-y-5 pb-20">
             <!-- Top bar -->
@@ -662,7 +672,7 @@
                 <div class="flex flex-wrap gap-2">
                     <template x-for="(v, idx) in currentPost.ideaLab.variants" :key="idx">
                         <div class="relative group">
-                            <button @click="currentPost.ideaLab.selectedIndex = idx" 
+                            <button @click="currentPost.ideaLab.selectedIndex = idx; $nextTick(() => autoResizeAll('#openIdeaLab'))" 
                                     class="px-4 py-2 rounded-xl text-xs font-bold border transition-all"
                                     :class="currentPost.ideaLab.selectedIndex === idx ? 'bg-amber-400/10 border-amber-400/50 text-amber-400' : 'bg-transparent border-[#30363d] text-zinc-500 hover:text-zinc-300'">
                                 <span x-text="'Идея ' + (idx + 1)"></span>
@@ -682,8 +692,9 @@
                 <div class="w-full px-4 py-3.5 rounded-2xl bg-transparent border border-[#30363d] focus-within:border-amber-400 space-y-3 transition-colors">
                     <textarea x-model="currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex].text" 
                               placeholder="" 
-                              @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                              x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
+                              @input="autoResize($el)"
+                              x-effect="$nextTick(() => autoResize($el))"
+                              x-init="$nextTick(() => autoResize($el))"
                               class="w-full bg-transparent text-white text-sm font-bold outline-none resize-none overflow-hidden"></textarea>
                     
                     <template x-if="hasFormulaValues(currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex])">
@@ -708,8 +719,9 @@
                         <label class="text-[10px] font-bold text-zinc-500 px-1" x-text="fld.label"></label>
                         <textarea x-model="currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex].formulas[fld.key]" 
                                   :placeholder="fld.placeholder"
-                                  @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                                  x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
+                                  @input="autoResize($el)"
+                                  x-effect="$nextTick(() => autoResize($el))"
+                                  x-init="$nextTick(() => autoResize($el))"
                                   class="w-full px-3.5 py-2.5 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
                     </div>
                 </template>
