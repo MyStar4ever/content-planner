@@ -406,68 +406,118 @@
     <!-- ================= MODAL: FORMATS MANAGER & CREATOR ================= -->
     <div x-show="openFormatsManager" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
         <div @click.away="openFormatsManager = false" class="w-full max-w-lg bg-[#161b22] border border-[#30363d] rounded-3xl p-5 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl modal-enter">
-            <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
-                <div class="flex items-center space-x-2">
-                    <i data-lucide="layers" class="w-5 h-5 text-cyan-400"></i>
-                    <h3 class="text-base font-bold text-white">Конструктор форматов постов</h3>
-                </div>
-                <button @click="openFormatsManager = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
-            </div>
+            
+            <!-- VIEW 1: LIST OF FORMATS -->
+            <template x-if="formatManagerView === 'list'">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="layers" class="w-5 h-5 text-cyan-400"></i>
+                            <h3 class="text-base font-bold text-white">Конструктор форматов постов</h3>
+                        </div>
+                        <button @click="openFormatsManager = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
 
-            <p class="text-xs text-zinc-400 leading-relaxed">
-                Добавьте блоки, из которых будет состоять пост.
-            </p>
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs text-zinc-400 leading-relaxed">
+                            Управляйте форматами и структурой постов.
+                        </p>
+                        <button @click="openNewFormatEditor()" class="px-3 py-2 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-amber-400 text-xs font-bold transition border border-[#30363d] flex items-center space-x-1.5 shrink-0">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Создать формат</span>
+                        </button>
+                    </div>
 
-            <!-- List of existing formats -->
-            <div class="space-y-3 pt-2">
-                <template x-for="fmt in formats" :key="fmt.id">
-                    <div class="p-3.5 rounded-2xl bg-[#0d1117] border border-[#30363d] space-y-2">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-2">
-                                <span class="w-3 h-3 rounded-full" :style="`background-color: ${fmt.color || '#39d353'};`"></span>
-                                <h4 class="text-sm font-bold text-white" x-text="fmt.name"></h4>
+                    <!-- List of existing formats -->
+                    <div class="space-y-3 pt-2">
+                        <template x-for="fmt in formats" :key="fmt.id">
+                            <div class="p-3.5 rounded-2xl bg-[#0d1117] border border-[#30363d] space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-3 h-3 rounded-full" :style="`background-color: ${fmt.color || '#39d353'};`"></span>
+                                        <h4 class="text-sm font-bold text-white" x-text="fmt.name"></h4>
+                                    </div>
+                                    <!-- Three dots dropdown menu -->
+                                    <div class="relative" x-data="{ openFormatMenu: false }">
+                                        <button @click="openFormatMenu = !openFormatMenu" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white transition">
+                                            <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                                        </button>
+                                        <div x-show="openFormatMenu" @click.away="openFormatMenu = false" class="absolute right-0 mt-1 w-40 bg-[#161b22] border border-[#30363d] rounded-xl shadow-2xl p-1 z-50 modal-enter" x-cloak>
+                                            <button @click="editFormat(fmt); openFormatMenu = false" class="w-full text-left px-3 py-1.5 rounded-lg text-xs text-zinc-300 hover:bg-[#21262d] flex items-center space-x-2">
+                                                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                                <span>Редактировать</span>
+                                            </button>
+                                            <button @click="deleteFormat(fmt.id); openFormatMenu = false" class="w-full text-left px-3 py-1.5 rounded-lg text-xs text-red-400 hover:bg-red-500/10 flex items-center space-x-2">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                <span>Удалить</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-1 pt-1">
+                                    <template x-for="b in fmt.blocks" :key="b.key">
+                                        <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#21262d] text-cyan-300 border border-[#30363d]" x-text="b.label"></span>
+                                    </template>
+                                </div>
                             </div>
-                            <button @click="deleteFormat(fmt.id)" class="p-1 rounded text-zinc-500 hover:text-red-400 transition" title="Удалить формат">
-                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- VIEW 2: FORMAT EDITOR (DIVE INSIDE) -->
+            <template x-if="formatManagerView === 'editor'">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                        <div class="flex items-center space-x-2">
+                            <button @click="cancelEditFormat()" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-300 hover:text-white transition">
+                                <i data-lucide="chevron-left" class="w-5 h-5"></i>
                             </button>
+                            <h3 class="text-base font-bold text-white" x-text="editingFormatId ? 'Редактирование формата' : 'Новый формат'"></h3>
                         </div>
-                        <div class="flex flex-wrap gap-1 pt-1">
-                            <template x-for="b in fmt.blocks" :key="b.key">
-                                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#21262d] text-cyan-300 border border-[#30363d]" x-text="b.label"></span>
-                            </template>
-                        </div>
+                        <button @click="openFormatsManager = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
                     </div>
-                </template>
-            </div>
 
-            <!-- Create New Format Form -->
-                <div class="space-y-4 pt-4">
                     <div>
-                        <input type="text" x-model="newFormatName" placeholder="Название формата" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                        <label class="text-xs text-zinc-400 block pb-1">Название формата</label>
+                        <input type="text" x-model="newFormatName" placeholder="напр. Reels / Shorts" class="w-full px-3.5 py-3 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
                     </div>
 
-                    <div class="space-y-3">
+                    <div class="space-y-3 pt-2">
                         <div class="flex items-center justify-between">
-                            <label class="text-xs text-zinc-400">Блоки</label>
-                            <button @click="addNewFormatBlock()" class="text-xs font-bold text-zinc-300 hover:underline">+ Блок</button>
+                            <label class="text-xs text-zinc-400 font-bold">Структура по блокам</label>
+                            <button @click="addNewFormatBlock()" class="text-xs font-bold text-amber-400 hover:underline">+ Добавить блок</button>
                         </div>
 
                         <template x-for="(b, idx) in newFormatBlocks" :key="idx">
-                            <div class="p-3 rounded-xl bg-[#161b22] border border-[#30363d] space-y-2">
+                            <div class="p-3.5 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2.5">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-[10px] font-bold text-zinc-500 uppercase">Блок №<span x-text="idx + 1"></span></span>
-                                    <button @click="removeNewFormatBlock(idx)" class="text-[10px] text-red-400 hover:underline">Удалить</button>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-[10px] font-bold text-zinc-500 uppercase">Блок №<span x-text="idx + 1"></span></span>
+                                        <div class="flex items-center space-x-1">
+                                            <button @click="moveFormatBlock(idx, -1)" :disabled="idx === 0" class="p-1 rounded bg-[#21262d] text-zinc-400 hover:text-white disabled:opacity-30" title="Вверх">
+                                                <i data-lucide="chevron-up" class="w-3 h-3"></i>
+                                            </button>
+                                            <button @click="moveFormatBlock(idx, 1)" :disabled="idx === newFormatBlocks.length - 1" class="p-1 rounded bg-[#21262d] text-zinc-400 hover:text-white disabled:opacity-30" title="Вниз">
+                                                <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button @click="removeNewFormatBlock(idx)" class="text-xs text-red-400 hover:underline">Удалить блок</button>
                                 </div>
-                                <input type="text" x-model="b.label" placeholder="Название блока" class="w-full px-3 py-2 rounded-lg bg-[#0d1117] text-white text-xs border border-[#30363d] outline-none">
-                                <input type="text" x-model="b.placeholder" placeholder="Описание..." class="w-full px-3 py-2 rounded-lg bg-[#0d1117] text-white text-xs border border-[#30363d] outline-none">
+                                <input type="text" x-model="b.label" placeholder="Название блока (напр. Хук)" class="w-full px-3 py-2 rounded-lg bg-[#161b22] text-white text-xs border border-[#30363d] outline-none">
+                                <input type="text" x-model="b.placeholder" placeholder="Подсказка / описание..." class="w-full px-3 py-2 rounded-lg bg-[#161b22] text-white text-xs border border-[#30363d] outline-none">
                             </div>
                         </template>
                     </div>
 
-                    <button @click="saveNewFormat()" class="w-full py-3 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
-                        Сохранить формат
-                    </button>
+                    <div class="pt-3">
+                        <button @click="saveFormat()" class="w-full py-3.5 rounded-2xl bg-[#21262d] hover:bg-[#30363d] text-white font-bold text-xs transition border border-[#30363d]" x-text="editingFormatId ? 'Сохранить изменения' : 'Создать формат'">
+                        </button>
+                    </div>
                 </div>
+            </template>
+
         </div>
     </div>
 
@@ -589,8 +639,8 @@
             <!-- Top bar -->
             <div class="flex items-center justify-between pt-2 pb-2">
                 <div class="flex items-center space-x-2">
-                    <i data-lucide="beaker" class="w-5 h-5 text-amber-400"></i>
-                    <h3 class="text-base font-bold text-white uppercase tracking-wider">Лаборатория идей</h3>
+                    <i data-lucide="lightbulb" class="w-5 h-5 text-amber-400"></i>
+                    <h3 class="text-base font-bold text-white uppercase tracking-wider">Idea Lab</h3>
                 </div>
                 <button @click="closeIdeaLab()" class="p-2 text-zinc-400 hover:text-white transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -599,11 +649,15 @@
 
             <!-- Variants Selector -->
             <div class="space-y-2">
-                <div class="flex items-center justify-between px-1">
-                    <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Варианты идей</span>
-                    <button @click="addIdeaLabVariant()" class="p-1 rounded-lg bg-[#21262d] hover:bg-[#30363d] text-amber-400 transition border border-[#30363d]">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                    </button>
+                <div class="flex items-center justify-end px-1">
+                    <div class="flex items-center space-x-2">
+                        <button @click="duplicateIdeaLabVariant()" class="p-1 text-zinc-400 hover:text-amber-400 transition" title="Дублировать выбранную идею">
+                            <i data-lucide="copy" class="w-5 h-5"></i>
+                        </button>
+                        <button @click="addIdeaLabVariant()" class="p-1 text-amber-400 hover:text-white transition" title="Создать новую идею">
+                            <i data-lucide="plus" class="w-6 h-6"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <template x-for="(v, idx) in currentPost.ideaLab.variants" :key="idx">
@@ -625,27 +679,36 @@
 
             <!-- Main Constructor Field -->
             <div class="space-y-2">
-                <label class="text-xs font-bold text-zinc-400 px-1">Результат (то, что будет в посте)</label>
-                <textarea x-model="currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex].text" 
-                          placeholder="Сформулируйте вашу идею здесь..." 
-                          @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
-                          x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
-                          class="w-full px-4 py-3.5 rounded-2xl bg-transparent text-white text-sm font-bold border border-[#30363d] focus:border-amber-400 outline-none resize-none overflow-hidden transition-colors"></textarea>
+                <div class="w-full px-4 py-3.5 rounded-2xl bg-transparent border border-[#30363d] focus-within:border-amber-400 space-y-3 transition-colors">
+                    <textarea x-model="currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex].text" 
+                              placeholder="" 
+                              @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                              x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
+                              class="w-full bg-transparent text-white text-sm font-bold outline-none resize-none overflow-hidden"></textarea>
+                    
+                    <template x-if="hasFormulaValues(currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex])">
+                        <div class="space-y-1.5 pt-2 border-t border-[#30363d]/50">
+                            <template x-for="(val, fKey) in currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex].formulas" :key="fKey">
+                                <div class="text-xs text-zinc-500 font-normal" x-show="val && val.trim().length > 0" x-text="val"></div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
             </div>
 
             <!-- Formula Helpers -->
             <div class="grid grid-cols-1 gap-4 pt-2">
                 <template x-for="fld in [
-                    { key: 'emotion', label: '1. Сильный образ или эмоции', placeholder: 'Шок! Как я потерял всё...' },
-                    { key: 'contradiction', label: '2. Отрицание или противоречие', placeholder: 'Перестаньте делать это...' },
-                    { key: 'urgency', label: '3. Время или срочность', placeholder: 'За 30 дней с нуля...' },
-                    { key: 'quantity', label: '4. Количество или сумма', placeholder: 'Как заработать 1 000 000₽...' }
+                    { key: 'emotion', label: '1. Сильный образ или эмоции', placeholder: '' },
+                    { key: 'contradiction', label: '2. Отрицание или противоречие', placeholder: '' },
+                    { key: 'urgency', label: '3. Время или срочность', placeholder: '' },
+                    { key: 'quantity', label: '4. Количество или сумма', placeholder: '' }
                 ]" :key="fld.key">
                     <div class="space-y-1.5">
-                        <label class="text-[10px] font-bold text-zinc-500 uppercase px-1" x-text="fld.label"></label>
+                        <label class="text-[10px] font-bold text-zinc-500 px-1" x-text="fld.label"></label>
                         <textarea x-model="currentPost.ideaLab.variants[currentPost.ideaLab.selectedIndex].formulas[fld.key]" 
                                   :placeholder="fld.placeholder"
-                                  @input="updateIdeaFromFormulas(); this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                  @input="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                                   x-init="$nextTick(() => { this.style.height = ''; this.style.height = this.scrollHeight + 'px' })"
                                   class="w-full px-3.5 py-2.5 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
                     </div>
@@ -662,59 +725,106 @@
 
 
     <!-- ================= MODAL: SETTINGS & GITHUB SYNC ================= -->
-    <div x-show="openSettingsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
+    <div x-show="openSettingsModal" 
+         x-init="
+            $watch('openSettingsModal', value => {
+                if (value) {
+                    settingsSubView = 'main';
+                    $nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                }
+            })
+         "
+         class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" x-cloak>
         <div @click.away="openSettingsModal = false" class="w-full max-w-md bg-[#161b22] border border-[#30363d] rounded-3xl p-5 space-y-4 shadow-2xl modal-enter">
-            <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
-                <div class="flex items-center space-x-2">
-                    <i data-lucide="settings" class="w-5 h-5 text-zinc-300"></i>
-                    <h3 class="text-base font-bold text-white">Настройки и Облако</h3>
-                </div>
-                <button @click="openSettingsModal = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
-            </div>
-
-        <div class="space-y-4">
-            <div class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Настройки</div>
             
-            <button @click="openNewPlatformModal = true; openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-white">
-                + Добавить площадку
-            </button>
-            <button @click="openFormatsManager = true; openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-white">
-                Конструктор форматов
-            </button>
-            <button @click="exportMarkdownBackup(); openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-white">
-                Экспорт .md
-            </button>
-            <button @click="exportJsonBackup(); openSettingsModal = false" class="w-full py-2 text-white text-xs text-left transition hover:text-white">
-                Экспорт JSON
-            </button>
+            <!-- MAIN SETTINGS VIEW -->
+            <template x-if="settingsSubView === 'main'">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="settings" class="w-5 h-5 text-zinc-300"></i>
+                            <h3 class="text-base font-bold text-white">Настройки и Облако</h3>
+                        </div>
+                        <button @click="openSettingsModal = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
 
-            <div class="pt-4 border-t border-[#30363d] space-y-3">
-                <div class="text-xs font-bold text-zinc-300 uppercase tracking-wider">GitHub Gist</div>
-                <div>
-                    <label class="text-xs text-zinc-400">Token</label>
-                    <input type="password" x-model="githubToken" placeholder="ghp_..." class="w-full mt-1 px-3 py-2 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
-                </div>
-                <div>
-                    <label class="text-xs text-zinc-400">Gist ID</label>
-                    <input type="text" x-model="gistId" placeholder="ID..." class="w-full mt-1 px-3 py-2 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
-                </div>
-                <button @click="saveGithubSettings()" class="w-full py-2.5 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
-                    Сохранить
-                </button>
-            </div>
-        </div>
+                    <div class="space-y-2">
+                        <button @click="openNewPlatformModal = true; openSettingsModal = false" class="w-full py-2.5 px-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] text-zinc-200 border border-[#30363d] text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center space-x-2.5">
+                                <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i>
+                                <span>Добавить площадку</span>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-zinc-500 group-hover:text-white transition"></i>
+                        </button>
 
-            <div class="border-t border-[#30363d] pt-4 space-y-2">
-                <div class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Резервная копия и файлы</div>
-                <div class="flex space-x-2">
-                    <button @click="exportMarkdownBackup()" class="flex-1 py-2 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-xs font-semibold text-zinc-200 transition">
-                        Экспорт в Markdown (.md)
-                    </button>
-                    <button @click="exportJsonBackup()" class="flex-1 py-2 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-xs font-semibold text-zinc-200 transition">
-                        Экспорт JSON
-                    </button>
+                        <button @click="openFormatsManager = true; openSettingsModal = false" class="w-full py-2.5 px-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] text-zinc-200 border border-[#30363d] text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center space-x-2.5">
+                                <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+                                <span>Конструктор форматов</span>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-zinc-500 group-hover:text-white transition"></i>
+                        </button>
+
+                        <button @click="settingsSubView = 'gist'; $nextTick(() => { if (window.lucide) lucide.createIcons(); })" class="w-full py-2.5 px-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] text-zinc-200 border border-[#30363d] text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center space-x-2.5">
+                                <i data-lucide="github" class="w-4 h-4 text-purple-400"></i>
+                                <span>GitHub Gist (Синхронизация)</span>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-zinc-500 group-hover:text-white transition"></i>
+                        </button>
+                    </div>
+
+                    <div class="border-t border-[#30363d] pt-4 space-y-2.5">
+                        <div class="text-xs font-bold text-zinc-400 uppercase tracking-wider px-1">Резервная копия и файлы</div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button @click="exportMarkdownBackup()" class="py-2.5 px-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] text-xs font-medium text-zinc-200 border border-[#30363d] transition flex items-center justify-center space-x-2">
+                                <i data-lucide="file-text" class="w-4 h-4 text-blue-400"></i>
+                                <span>Экспорт .md</span>
+                            </button>
+                            <button @click="exportJsonBackup()" class="py-2.5 px-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] text-xs font-medium text-zinc-200 border border-[#30363d] transition flex items-center justify-center space-x-2">
+                                <i data-lucide="file-json" class="w-4 h-4 text-amber-400"></i>
+                                <span>Экспорт JSON</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </template>
+
+            <!-- GITHUB GIST SUB-VIEW (DIVE INSIDE) -->
+            <template x-if="settingsSubView === 'gist'">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                        <div class="flex items-center space-x-2">
+                            <button @click="settingsSubView = 'main'; $nextTick(() => { if (window.lucide) lucide.createIcons(); })" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-300 hover:text-white transition">
+                                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                            </button>
+                            <h3 class="text-base font-bold text-white">GitHub Gist</h3>
+                        </div>
+                        <button @click="openSettingsModal = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-zinc-400 font-medium flex items-center space-x-1.5 pb-1">
+                                <i data-lucide="key" class="w-3.5 h-3.5 text-zinc-400"></i>
+                                <span>Personal Access Token</span>
+                            </label>
+                            <input type="password" x-model="githubToken" placeholder="ghp_..." class="w-full px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-xs text-zinc-400 font-medium flex items-center space-x-1.5 pb-1">
+                                <i data-lucide="database" class="w-3.5 h-3.5 text-zinc-400"></i>
+                                <span>Gist ID (необязательно)</span>
+                            </label>
+                            <input type="text" x-model="gistId" placeholder="ID..." class="w-full px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                        </div>
+                        <button @click="saveGithubSettings()" class="w-full py-3 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
+                            Сохранить настройки Gist
+                        </button>
+                    </div>
+                </div>
+            </template>
+
         </div>
     </div>
 
@@ -830,6 +940,7 @@
 
                 // Modals
                 openSettingsModal: false,
+                settingsSubView: 'main', // 'main' | 'gist'
                 openFormatsManager: false,
                 openNewPlatformModal: false,
                 openPostModal: false,
@@ -840,6 +951,8 @@
                 newPlatform: { name: '', desc: '', color: '#39d353' },
 
                 // New format form
+                formatManagerView: 'list', // 'list' | 'editor'
+                editingFormatId: null,
                 newFormatName: '',
                 newFormatBlocks: [],
 
@@ -1207,27 +1320,82 @@
                     this.newFormatBlocks.splice(idx, 1);
                 },
 
-                saveNewFormat() {
+                openNewFormatEditor() {
+                    this.editingFormatId = null;
+                    this.newFormatName = '';
+                    this.newFormatBlocks = [{ key: 'block_0_' + Date.now(), label: '', placeholder: '' }];
+                    this.formatManagerView = 'editor';
+                    this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                },
+
+                saveFormat() {
                     if (!this.newFormatName.trim() || this.newFormatBlocks.length === 0) {
                         alert('Введите название и добавьте хотя бы один блок');
                         return;
                     }
-                    const fmt = {
-                        id: 'fmt_' + Date.now(),
-                        name: this.newFormatName.trim(),
-                        color: '#' + Math.floor(Math.random()*16777215).toString(16),
-                        blocks: this.newFormatBlocks.map((b, i) => ({
-                            key: 'block_' + i + '_' + Date.now(),
-                            label: b.label || ('Блок ' + (i+1)),
-                            placeholder: b.placeholder || ''
-                        }))
-                    };
-                    this.formats.push(fmt);
+                    if (this.editingFormatId) {
+                        const fmt = this.formats.find(f => f.id === this.editingFormatId);
+                        if (fmt) {
+                            fmt.name = this.newFormatName.trim();
+                            fmt.blocks = this.newFormatBlocks.map((b, i) => ({
+                                key: b.key || ('block_' + i + '_' + Date.now()),
+                                label: b.label || ('Блок ' + (i+1)),
+                                placeholder: b.placeholder || ''
+                            }));
+                        }
+                        alert('Формат успешно обновлен!');
+                    } else {
+                        const fmt = {
+                            id: 'fmt_' + Date.now(),
+                            name: this.newFormatName.trim(),
+                            color: '#' + Math.floor(Math.random()*16777215).toString(16),
+                            blocks: this.newFormatBlocks.map((b, i) => ({
+                                key: 'block_' + i + '_' + Date.now(),
+                                label: b.label || ('Блок ' + (i+1)),
+                                placeholder: b.placeholder || ''
+                            }))
+                        };
+                        this.formats.push(fmt);
+                        alert('Формат успешно создан!');
+                    }
+                    this.formatManagerView = 'list';
+                    this.editingFormatId = null;
                     this.newFormatName = '';
                     this.newFormatBlocks = [];
                     this.saveData();
-                    this.openFormatsManager = false;
-                    alert('Формат успешно создан!');
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                editFormat(fmt) {
+                    this.editingFormatId = fmt.id;
+                    this.newFormatName = fmt.name;
+                    this.newFormatBlocks = JSON.parse(JSON.stringify(fmt.blocks));
+                    this.formatManagerView = 'editor';
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                cancelEditFormat() {
+                    this.formatManagerView = 'list';
+                    this.editingFormatId = null;
+                    this.newFormatName = '';
+                    this.newFormatBlocks = [];
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
+                },
+
+                moveFormatBlock(idx, dir) {
+                    const newIdx = idx + dir;
+                    if (newIdx < 0 || newIdx >= this.newFormatBlocks.length) return;
+                    const item = this.newFormatBlocks.splice(idx, 1)[0];
+                    this.newFormatBlocks.splice(newIdx, 0, item);
+                    this.$nextTick(() => {
+                        if (window.lucide) lucide.createIcons();
+                    });
                 },
 
                 deleteFormat(fmtId) {
@@ -1318,6 +1486,13 @@
                     this.currentPost.ideaLab.selectedIndex = this.currentPost.ideaLab.variants.length - 1;
                 },
 
+                duplicateIdeaLabVariant() {
+                    const current = this.currentPost.ideaLab.variants[this.currentPost.ideaLab.selectedIndex];
+                    const clone = JSON.parse(JSON.stringify(current));
+                    this.currentPost.ideaLab.variants.push(clone);
+                    this.currentPost.ideaLab.selectedIndex = this.currentPost.ideaLab.variants.length - 1;
+                },
+
                 removeIdeaLabVariant(idx) {
                     if (this.currentPost.ideaLab.variants.length > 1) {
                         this.currentPost.ideaLab.variants.splice(idx, 1);
@@ -1330,19 +1505,33 @@
                     }
                 },
 
-                updateIdeaFromFormulas() {
-                    const variant = this.currentPost.ideaLab.variants[this.currentPost.ideaLab.selectedIndex];
+                hasFormulaValues(variant) {
+                    if (!variant || !variant.formulas) return false;
                     const f = variant.formulas;
-                    const parts = [f.emotion, f.contradiction, f.urgency, f.quantity].filter(x => x && x.trim());
-                    if (parts.length > 0) {
-                        variant.text = parts.join(' ');
-                    }
+                    return (f.emotion && f.emotion.trim()) || 
+                           (f.contradiction && f.contradiction.trim()) || 
+                           (f.urgency && f.urgency.trim()) || 
+                           (f.quantity && f.quantity.trim());
                 },
 
                 closeIdeaLab() {
                     const variant = this.currentPost.ideaLab.variants[this.currentPost.ideaLab.selectedIndex];
-                    if (variant && variant.text) {
-                        this.currentPost.title = variant.text;
+                    if (variant) {
+                        let parts = [];
+                        if (variant.text && variant.text.trim()) {
+                            parts.push(variant.text.trim());
+                        }
+                        if (variant.formulas) {
+                            const f = variant.formulas;
+                            [f.emotion, f.contradiction, f.urgency, f.quantity].forEach(val => {
+                                if (val && val.trim()) {
+                                    parts.push(val.trim());
+                                }
+                            });
+                        }
+                        if (parts.length > 0) {
+                            this.currentPost.title = parts.join(' ');
+                        }
                     }
                     this.openIdeaLab = false;
                     this.$nextTick(() => {
