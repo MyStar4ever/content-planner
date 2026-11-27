@@ -584,7 +584,10 @@
                 <template x-for="blockDef in activePostFormatBlocks" :key="blockDef.key">
                     <div class="space-y-1">
                         <div class="flex items-center justify-between px-1">
-                            <label class="text-xs font-bold text-zinc-300" x-text="blockDef.label"></label>
+                            <div class="flex items-center space-x-1.5">
+                                <label class="text-xs font-bold text-zinc-300" x-text="blockDef.label"></label>
+                                <span class="text-xs text-zinc-500" x-show="getBlockWordCount(currentPost.blocks[blockDef.key]) > 0" x-text="'(' + getBlockWordCount(currentPost.blocks[blockDef.key]) + ')'"></span>
+                            </div>
                         </div>
                         <textarea x-model="currentPost.blocks[blockDef.key]" 
                                   placeholder="Введите текст..." 
@@ -599,8 +602,9 @@
             <!-- LIVE PREVIEW & COPY BUTTON EXPLANATION -->
             <div class="space-y-2 pt-2 border-t border-[#21262d]" x-data="{ copied: false }">
                 <div class="flex items-center justify-between">
-                    <div>
+                    <div class="flex items-center space-x-1.5">
                         <span class="text-xs font-bold text-white">Preview</span>
+                        <span class="text-xs text-zinc-500" x-show="getBlockWordCount(getStitchedPostText(currentPost)) > 0" x-text="'(' + getBlockWordCount(getStitchedPostText(currentPost)) + ')'"></span>
                     </div>
                     <div>
                         <button @click="
@@ -1336,6 +1340,13 @@
                 get activePostFormatBlocks() {
                     const fmt = this.formats.find(f => f.id === this.currentPost.formatId);
                     return fmt ? fmt.blocks : [];
+                },
+
+                getBlockWordCount(text) {
+                    if (!text) return 0;
+                    const trimmed = text.trim();
+                    if (!trimmed) return 0;
+                    return trimmed.split(/\s+/).filter(Boolean).length;
                 },
 
                 get syncStatusClass() {
