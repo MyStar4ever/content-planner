@@ -220,61 +220,62 @@
                                                 <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#21262d] text-zinc-400 border border-[#30363d]" x-text="getFormatName(post.formatId)"></span>
                                             </div>
                                             
-                                            <div class="flex items-baseline justify-between gap-2">
-                                                <h3 class="text-sm font-bold text-white flex-1 leading-snug" x-text="post.title || 'Без названия'"></h3>
-                                                <span class="text-[10px] text-zinc-500 whitespace-nowrap font-medium" x-text="formatTelegramDate(post.createdAt)"></span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                             <div class="flex items-baseline justify-between gap-2 cursor-pointer select-none" @click="post.isExpanded = !post.isExpanded; saveData()">
+                                                 <h3 class="text-sm font-bold text-white flex-1 leading-snug" x-text="post.title || 'Без названия'"></h3>
+                                                 <div class="flex items-center space-x-1.5">
+                                                     <span class="text-[10px] text-zinc-500 whitespace-nowrap font-medium" x-text="formatTelegramDate(post.createdAt)"></span>
+                                                     <svg class="w-3.5 h-3.5 text-zinc-500 transition-transform duration-200" :class="post.isExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     </div>
 
-                                    <div class="absolute top-3 right-2">
-                                        <button @click="openMenu = !openMenu" class="p-2 text-zinc-400 hover:text-white transition">
-                                            <i data-lucide="more-vertical" class="w-5 h-5"></i>
-                                        </button>
-                                        <div x-show="openMenu" @click.away="openMenu = false" class="absolute right-0 mt-1 w-52 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl p-1.5 z-50 modal-enter" x-cloak>
-                                            <button @click="editPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                <i data-lucide="edit-3" class="w-3.5 h-3.5 opacity-60"></i>
-                                                <span>Редактировать</span>
-                                            </button>
-                                            <button @click="duplicatePost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                <i data-lucide="clipboard" class="w-3.5 h-3.5 opacity-60"></i>
-                                                <span>Дублировать</span>
-                                            </button>
-                                            <button @click="schedulePostModal(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                <i data-lucide="calendar" class="w-3.5 h-3.5 opacity-60"></i>
-                                                <span>Запланировать</span>
-                                            </button>
-                                            <button @click="
-                    const text = getStitchedPostText(post);
-                    navigator.clipboard.writeText(text).then(() => {
-                        // анимируем или тихо копируем
-                    });
-                    openMenu = false;
-                " class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                <i data-lucide="copy" class="w-3.5 h-3.5 opacity-60"></i>
-                                                <span>Копировать пост</span>
-                                            </button>
-                                            <button @click="copyGptPromptForPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                <i data-lucide="cpu" class="w-3.5 h-3.5 opacity-60"></i>
-                                                <span>Промпт для GPT</span>
-                                            </button>
-                                            <div class="border-t border-[#30363d] my-1"></div>
-                                            <button @click="deletePost(post.id); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition">
-                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                                <span>Удалить</span>
-                                            </button>
-                                        </div>
-                                    </div>
+                                     <div class="absolute top-3 right-2">
+                                         <button @click="openMenu = !openMenu" class="p-2 text-zinc-400 hover:text-white transition">
+                                             <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                                         </button>
+                                         <div x-show="openMenu" @click.away="openMenu = false" class="absolute right-0 mt-1 w-52 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl p-1.5 z-50 modal-enter" x-cloak>
+                                             <button @click="editPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                 <i data-lucide="edit-3" class="w-3.5 h-3.5 opacity-60"></i>
+                                                 <span>Редактировать</span>
+                                             </button>
+                                             <button @click="duplicatePost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                 <i data-lucide="clipboard" class="w-3.5 h-3.5 opacity-60"></i>
+                                                 <span>Дублировать</span>
+                                             </button>
+                                             <button @click="schedulePostModal(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                 <i data-lucide="calendar" class="w-3.5 h-3.5 opacity-60"></i>
+                                                 <span>Запланировать</span>
+                                             </button>
+                                             <button @click="
+                                                 const text = getStitchedPostText(post);
+                                                 navigator.clipboard.writeText(text).then(() => {});
+                                                 openMenu = false;
+                                             " class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                 <i data-lucide="copy" class="w-3.5 h-3.5 opacity-60"></i>
+                                                 <span>Копировать пост</span>
+                                             </button>
+                                             <button @click="copyGptPromptForPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                 <i data-lucide="cpu" class="w-3.5 h-3.5 opacity-60"></i>
+                                                 <span>Промпт для GPT</span>
+                                             </button>
+                                             <div class="border-t border-[#30363d] my-1"></div>
+                                             <button @click="deletePost(post.id); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition">
+                                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                 <span>Удалить</span>
+                                             </button>
+                                         </div>
+                                     </div>
 
-                                    <!-- Blocks preview summary -->
-                                    <div class="space-y-2">
-                                        <template x-for="(val, blockKey) in post.blocks" :key="blockKey">
-                                            <div class="text-xs" x-show="val && val.trim().length > 0">
-                                                <span class="font-bold text-zinc-500 mr-1.5" x-text="getBlockLabel(post.formatId, blockKey) + ':'"></span>
-                                                <span class="text-zinc-300" x-text="val"></span>
-                                            </div>
-                                        </template>
-                                    </div>
+                                     <!-- Blocks preview summary -->
+                                     <div class="space-y-2 pt-1" x-show="post.isExpanded" x-transition>
+                                         <template x-for="(val, blockKey) in post.blocks" :key="blockKey">
+                                             <div class="text-xs cursor-pointer hover:bg-[#21262d] p-1.5 rounded-xl transition group/block" @click="editPost(post)" x-show="val && val.trim().length > 0" title="Нажмите, чтобы открыть редактор">
+                                                 <span class="font-bold text-zinc-500 mr-1.5 group-hover/block:text-zinc-400" x-text="getBlockLabel(post.formatId, blockKey) + ':'"></span>
+                                                 <span class="text-zinc-300 group-hover/block:text-white" x-text="val"></span>
+                                             </div>
+                                         </template>
+                                     </div>
                                 </div>
                             </template>
                         </div>
