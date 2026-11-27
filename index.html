@@ -216,7 +216,7 @@
                                                     </div>
                                                 </div>
 
-                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#21262d] text-zinc-400 border border-[#30363d]" x-text="getFormatName(post.formatId)"></span>
+                                                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-transparent text-zinc-400 border border-[#30363d]" x-text="getFormatName(post.formatId)"></span>
                                             </div>
 
                                             <div class="flex items-center space-x-2">
@@ -1246,10 +1246,10 @@
                 },
 
                 getStatusBadgeClass(status) {
-                    if (status === 'published') return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
-                    if (status === 'results_pending') return 'bg-amber-400/15 text-amber-400 border-amber-400/30';
-                    if (status === 'scheduled') return 'bg-pink-500/15 text-pink-400 border-pink-500/30';
-                    return 'bg-zinc-800/80 text-zinc-400 border-zinc-700';
+                    if (status === 'published') return 'bg-transparent text-emerald-400 border border-emerald-500/40';
+                    if (status === 'results_pending') return 'bg-transparent text-amber-400 border border-amber-400/40';
+                    if (status === 'scheduled') return 'bg-transparent text-pink-400 border border-pink-500/40';
+                    return 'bg-transparent text-zinc-400 border border-[#30363d]';
                 },
 
                 getStatusLabel(status) {
