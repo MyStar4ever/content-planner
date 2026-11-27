@@ -61,6 +61,11 @@
             </template>
         </div>
         <div class="flex items-center space-x-2">
+            <!-- Sync Indicator Button -->
+            <button @click="openSettingsModal = true; settingsSubView = 'gist'" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition px-2.5 py-1.5 rounded-full shadow-lg active:scale-95 flex items-center space-x-1.5 text-xs" :title="syncStatusText">
+                <span class="w-2 h-2 rounded-full" :class="syncStatusClass"></span>
+                <span class="text-[10px] text-zinc-400 font-medium hidden sm:inline" x-text="syncStatusLabel"></span>
+            </button>
             <template x-if="currentScreen === 'platforms'">
                 <button @click="openSettingsModal = true" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95" title="Настройки">
                     <i data-lucide="settings" class="w-5 h-5"></i>
@@ -657,6 +662,30 @@
                 </button>
             </div>
 
+            <!-- AI Generation Bar -->
+            <div class="flex items-center justify-between bg-[#161b22] border border-amber-500/30 rounded-2xl p-3 shadow-lg">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                    <span class="text-xs font-bold text-zinc-200">AI Агент: сгенерировать идею</span>
+                </div>
+                <button @click="generateIdeaWithAI()" 
+                        :disabled="isGeneratingAI"
+                        class="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-black font-bold text-xs transition flex items-center space-x-1.5 disabled:opacity-50">
+                    <template x-if="!isGeneratingAI">
+                        <span class="flex items-center space-x-1">
+                            <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                            <span>Сгенерировать</span>
+                        </span>
+                    </template>
+                    <template x-if="isGeneratingAI">
+                        <span class="flex items-center space-x-1">
+                            <i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i>
+                            <span>Думаю...</span>
+                        </span>
+                    </template>
+                </button>
+            </div>
+
             <!-- Variants Selector -->
             <div class="space-y-2">
                 <div class="flex items-center justify-end px-1">
@@ -784,6 +813,14 @@
                             </div>
                             <i data-lucide="chevron-right" class="w-4 h-4 text-zinc-500 group-hover:text-white transition"></i>
                         </button>
+
+                        <button @click="settingsSubView = 'ai'; $nextTick(() => { if (window.lucide) lucide.createIcons(); })" class="w-full py-2.5 px-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] text-zinc-200 border border-[#30363d] text-xs flex items-center justify-between transition group">
+                            <div class="flex items-center space-x-2.5">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                                <span>ИИ Агент (API Ключ и Модель)</span>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-zinc-500 group-hover:text-white transition"></i>
+                        </button>
                     </div>
 
                     <div class="border-t border-[#30363d] pt-4 space-y-2.5">
@@ -810,28 +847,133 @@
                             <button @click="settingsSubView = 'main'; $nextTick(() => { if (window.lucide) lucide.createIcons(); })" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-300 hover:text-white transition">
                                 <i data-lucide="chevron-left" class="w-5 h-5"></i>
                             </button>
-                            <h3 class="text-base font-bold text-white">GitHub Gist</h3>
+                            <h3 class="text-base font-bold text-white">Синхронизация через GitHub Gist</h3>
                         </div>
                         <button @click="openSettingsModal = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+
+                    <!-- Sync Status Indicator Box -->
+                    <div class="p-3.5 rounded-2xl bg-[#0d1117] border border-[#30363d] space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full" :class="syncStatusClass"></span>
+                                <span class="text-xs font-bold text-white" x-text="syncStatusLabel"></span>
+                            </div>
+                            <span x-show="lastSyncedAt" class="text-[10px] text-zinc-500" x-text="'Синхронизировано: ' + lastSyncedAt"></span>
+                        </div>
+                        <p class="text-[11px] text-zinc-400">1. Убедись, что на телефоне в настройках синхронизации введен токен и данные хоть раз сохранились в Gist.<br>2. Вставь этот же токен ниже и нажми «Загрузить с телефона».</p>
                     </div>
 
                     <div class="space-y-3">
                         <div>
                             <label class="text-xs text-zinc-400 font-medium flex items-center space-x-1.5 pb-1">
                                 <i data-lucide="key" class="w-3.5 h-3.5 text-zinc-400"></i>
-                                <span>Personal Access Token</span>
+                                <span>GitHub Token (ghp_...)</span>
                             </label>
-                            <input type="password" x-model="githubToken" placeholder="ghp_..." class="w-full px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                            <input type="password" x-model="githubToken" placeholder="Вставьте токен..." class="w-full px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
                         </div>
-                        <div>
-                            <label class="text-xs text-zinc-400 font-medium flex items-center space-x-1.5 pb-1">
-                                <i data-lucide="database" class="w-3.5 h-3.5 text-zinc-400"></i>
-                                <span>Gist ID (необязательно)</span>
-                            </label>
-                            <input type="text" x-model="gistId" placeholder="ID..." class="w-full px-3 py-2.5 rounded-xl bg-[#0d1117] text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+
+                        <!-- Manual Sync Action Buttons -->
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <button @click="pullFromGist(true)" :disabled="syncStatus === 'syncing'" class="py-2.5 px-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] text-xs font-bold text-cyan-400 border border-[#30363d] transition flex items-center justify-center space-x-1.5 disabled:opacity-50">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Загрузить с телефона</span>
+                            </button>
+                            <button @click="pushToGist(true)" :disabled="syncStatus === 'syncing'" class="py-2.5 px-3 rounded-xl bg-[#0d1117] hover:bg-[#21262d] text-xs font-bold text-amber-400 border border-[#30363d] transition flex items-center justify-center space-x-1.5 disabled:opacity-50">
+                                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                                <span>Сохранить на ПК</span>
+                            </button>
                         </div>
+
                         <button @click="saveGithubSettings()" class="w-full py-3 rounded-xl bg-[#21262d] hover:bg-[#30363d] text-white font-semibold text-xs transition border border-[#30363d]">
-                            Сохранить настройки Gist
+                            Сохранить и Загрузить 🔄
+                        </button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- AI SETTINGS SUB-VIEW -->
+            <template x-if="settingsSubView === 'ai'">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                        <div class="flex items-center space-x-2">
+                            <button @click="settingsSubView = 'main'; $nextTick(() => { if (window.lucide) lucide.createIcons(); })" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-300 hover:text-white transition">
+                                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                            </button>
+                            <h3 class="text-base font-bold text-white">Менеджер ключей и моделей ИИ</h3>
+                        </div>
+                        <button @click="openSettingsModal = false" class="p-1.5 rounded-xl bg-[#21262d] text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-zinc-400 font-bold">Ваши API ключи</span>
+                            <button @click="addAiKey()" class="px-2.5 py-1 rounded-lg bg-amber-500/25 text-amber-400 text-xs font-bold hover:bg-amber-500/35 transition flex items-center space-x-1">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                <span>Добавить ключ</span>
+                            </button>
+                        </div>
+
+                        <div class="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+                            <template x-for="(k, idx) in aiKeys" :key="k.id">
+                                <div class="bg-[#0d1117] border border-[#30363d] rounded-2xl p-3.5 space-y-3 relative group">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center space-x-2">
+                                            <input type="radio" name="activeKeyRadio" :value="k.id" x-model="activeAiKeyId" class="accent-amber-400" title="Использовать этот ключ">
+                                            <input type="text" x-model="k.name" placeholder="Название (напр. Grok Main)" class="bg-transparent text-white text-xs font-bold outline-none border-b border-transparent focus:border-amber-400">
+                                            <span x-show="activeAiKeyId === k.id" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-400/20 text-amber-400">Активный</span>
+                                        </div>
+                                        <button x-show="aiKeys.length > 1" @click="removeAiKey(idx)" class="text-zinc-500 hover:text-red-400 transition p-1">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-[10px] text-zinc-500 block pb-1">Провайдер</label>
+                                            <select x-model="k.provider" class="w-full px-2.5 py-2 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] outline-none">
+                                                <option value="xai">xAI Grok</option>
+                                                <option value="openai">OpenAI</option>
+                                                <option value="openrouter">OpenRouter</option>
+                                                <option value="gemini">Google Gemini</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-zinc-500 block pb-1">API Ключ</label>
+                                            <input type="password" x-model="k.apiKey" placeholder="xai-... или sk-..." class="w-full px-2.5 py-2 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] outline-none">
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-1.5 pt-1">
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-[10px] text-zinc-500">Модель</label>
+                                            <button @click="testAndFetchModels(k)" :disabled="k.loading" class="px-2.5 py-1 rounded-lg bg-[#161b22] hover:bg-[#21262d] text-amber-400 text-[10px] font-bold border border-[#30363d] transition flex items-center space-x-1">
+                                                <template x-if="!k.loading">
+                                                    <span>Проверить / Загрузить модели 🔄</span>
+                                                </template>
+                                                <template x-if="k.loading">
+                                                    <span>Проверка...</span>
+                                                </template>
+                                            </button>
+                                        </div>
+                                        
+                                        <template x-if="k.models && k.models.length > 0">
+                                            <select x-model="k.selectedModel" class="w-full px-2.5 py-2 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] outline-none">
+                                                <template x-for="m in k.models" :key="m">
+                                                    <option :value="m" x-text="m"></option>
+                                                </template>
+                                            </select>
+                                        </template>
+                                        <template x-if="!k.models || k.models.length === 0">
+                                            <input type="text" x-model="k.selectedModel" placeholder="Введите модель вручную (напр. grok-beta)" class="w-full px-2.5 py-2 rounded-xl bg-[#161b22] text-white text-xs border border-[#30363d] outline-none">
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <button @click="saveAiSettings()" class="w-full py-3 rounded-xl bg-amber-500/25 hover:bg-amber-500/35 text-amber-400 font-semibold text-xs transition border border-amber-500/30">
+                            Сохранить настройки ИИ
                         </button>
                     </div>
                 </div>
@@ -1181,6 +1323,10 @@
                 githubToken: '',
                 gistId: '',
                 syncStatus: 'local', // local | syncing | synced | error
+                lastSyncedAt: '',
+                aiKeys: [],
+                activeAiKeyId: '',
+                isGeneratingAI: false,
 
                 get headerTitle() {
                     if (this.currentScreen === 'platforms') return 'Content Studio';
@@ -1255,6 +1401,21 @@
 
                     this.githubToken = localStorage.getItem('cp_github_token') || '';
                     this.gistId = localStorage.getItem('cp_gist_id') || '';
+                    
+                    const savedAiKeys = localStorage.getItem('cp_ai_keys_v1');
+                    if (savedAiKeys) {
+                        try { this.aiKeys = JSON.parse(savedAiKeys); } catch(e){}
+                    } else {
+                        const oldKey = localStorage.getItem('cp_ai_api_key') || '';
+                        const oldProvider = localStorage.getItem('cp_ai_provider') || 'xai';
+                        const oldModel = localStorage.getItem('cp_ai_model') || 'grok-beta';
+                        if (oldKey) {
+                            this.aiKeys = [{ id: 'key_' + Date.now(), name: 'Основной ключ', provider: oldProvider, apiKey: oldKey, models: [oldModel], selectedModel: oldModel, loading: false }];
+                        } else {
+                            this.aiKeys = [{ id: 'key_' + Date.now(), name: 'Grok / OpenAI ключ', provider: 'xai', apiKey: '', models: ['grok-beta'], selectedModel: 'grok-beta', loading: false }];
+                        }
+                    }
+                    this.activeAiKeyId = localStorage.getItem('cp_active_ai_key_id') || (this.aiKeys[0] ? this.aiKeys[0].id : '');
 
                     if (this.githubToken) {
                         this.syncWithGist();
@@ -1280,6 +1441,8 @@
                     localStorage.setItem('cp_platforms_v1', JSON.stringify(this.platforms));
                     localStorage.setItem('cp_formats_v1', JSON.stringify(this.formats));
                     localStorage.setItem('cp_posts_v1', JSON.stringify(this.posts));
+                    localStorage.setItem('cp_ai_keys_v1', JSON.stringify(this.aiKeys));
+                    localStorage.setItem('cp_active_ai_key_id', this.activeAiKeyId);
 
                     if (this.githubToken) {
                         this.debouncedSyncGist();
@@ -1791,89 +1954,212 @@ ${structure}
                     return date.toLocaleDateString('ru-RU', options);
                 },
 
+                addAiKey() {
+                    const newKey = {
+                        id: 'key_' + Date.now(),
+                        name: 'Ключ ' + (this.aiKeys.length + 1),
+                        provider: 'xai',
+                        apiKey: '',
+                        models: [],
+                        selectedModel: 'grok-beta',
+                        loading: false
+                    };
+                    this.aiKeys.push(newKey);
+                    if (!this.activeAiKeyId) {
+                        this.activeAiKeyId = newKey.id;
+                    }
+                    this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                },
+
+                removeAiKey(idx) {
+                    const removed = this.aiKeys[idx];
+                    this.aiKeys.splice(idx, 1);
+                    if (this.activeAiKeyId === removed.id && this.aiKeys.length > 0) {
+                        this.activeAiKeyId = this.aiKeys[0].id;
+                    }
+                    this.saveAiSettings();
+                },
+
+                async testAndFetchModels(k) {
+                    if (!k.apiKey || !k.apiKey.trim()) {
+                        alert('Сначала введите API ключ!');
+                        return;
+                    }
+                    k.loading = true;
+                    try {
+                        let models = [];
+                        if (k.provider === 'gemini') {
+                            const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${k.apiKey.trim()}`;
+                            const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(targetUrl));
+                            if (!res.ok) throw new Error('Ошибка ключа Gemini');
+                            const data = await res.json();
+                            models = (data.models || []).map(m => m.name.replace('models/', ''));
+                        } else {
+                            let targetUrl = 'https://api.openai.com/v1/models';
+                            if (k.provider === 'xai') targetUrl = 'https://api.x.ai/v1/models';
+                            if (k.provider === 'openrouter') targetUrl = 'https://openrouter.ai/api/v1/models';
+
+                            const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(targetUrl), {
+                                headers: { 'Authorization': `Bearer ${k.apiKey.trim()}` }
+                            });
+                            if (!res.ok) throw new Error('Неверный API ключ или ошибка сети');
+                            const data = await res.json();
+                            models = (data.data || []).map(m => m.id);
+                        }
+
+                        if (models.length === 0) {
+                            if (k.provider === 'xai') models = ['grok-beta', 'grok-2', 'grok-2-latest'];
+                            else if (k.provider === 'openai') models = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'];
+                            else if (k.provider === 'gemini') models = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+                        }
+
+                        k.models = models;
+                        if (models.length > 0 && !k.selectedModel) {
+                            k.selectedModel = models[0];
+                        }
+                        alert(`Успешно! Доступно моделей: ${models.length}`);
+                    } catch (e) {
+                        console.error(e);
+                        let fallbackModels = ['grok-beta', 'grok-2', 'grok-2-latest'];
+                        if (k.provider === 'openai') fallbackModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'];
+                        if (k.provider === 'gemini') fallbackModels = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+                        if (k.provider === 'openrouter') fallbackModels = ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o'];
+
+                        k.models = fallbackModels;
+                        if (!k.selectedModel) k.selectedModel = fallbackModels[0];
+                        alert('Запрос через CORS-прокси не прошел, но добавлены стандартные модели. Выберите из списка или введите вручную.');
+                    } finally {
+                        k.loading = false;
+                        this.$nextTick(() => { if (window.lucide) lucide.createIcons(); });
+                    }
+                },
+
+                saveAiSettings() {
+                    localStorage.setItem('cp_ai_keys_v1', JSON.stringify(this.aiKeys));
+                    localStorage.setItem('cp_active_ai_key_id', this.activeAiKeyId);
+                    alert('Настройки ИИ сохранены!');
+                    this.openSettingsModal = false;
+                    this.saveData();
+                },
+
+                async generateIdeaWithAI() {
+                    const activeKeyObj = this.aiKeys.find(k => k.id === this.activeAiKeyId) || this.aiKeys[0];
+                    if (!activeKeyObj || !activeKeyObj.apiKey || !activeKeyObj.apiKey.trim()) {
+                        alert('Пожалуйста, добавьте и выберите рабочий API ключ в настройках ИИ!');
+                        this.openSettingsModal = true;
+                        this.settingsSubView = 'ai';
+                        return;
+                    }
+
+                    const apiKey = activeKeyObj.apiKey.trim();
+                    const provider = activeKeyObj.provider;
+                    const model = activeKeyObj.selectedModel || 'grok-beta';
+
+                    this.isGeneratingAI = true;
+                    const platformName = this.activePlatform ? this.activePlatform.name : 'Соцсеть';
+                    const postTitle = this.currentPost.title || 'Интересная тема';
+                    
+                    const prompt = `Ты опытный контент-маркетолог и креативный продюсер для ${platformName}.
+Тема / Заголовок поста: "${postTitle}".
+
+Сгенерируй мощную, цепляющую идею поста и заполни 5 структурированных полей.
+Ответ верни СТРОГО в формате JSON без какого-либо дополнительного текста, без блоков markdown (без \`\`\`json):
+{
+  "text": "Развернутый концепт идеи, главный угол подачи и суть (2-3 предложения)",
+  "emotion": "Сильный образ, эмоция или триггер для хуйка (0-3 сек)",
+  "contradiction": "Неожиданное противоречие, слом шаблона или отрицание",
+  "urgency": "Фактор времени, дедлайна или срочности",
+  "quantity": "Конкретная цифра, статистика, сумма или количество"
+}`;
+
+                    try {
+                        let aiText = '';
+                        if (provider === 'gemini') {
+                            const targetUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                            const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(targetUrl), {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    contents: [{ parts: [{ text: prompt }] }]
+                                })
+                            });
+                            if (!res.ok) {
+                                const errBody = await res.text();
+                                throw new Error(`Gemini Error (${res.status}): ${errBody}`);
+                            }
+                            const data = await res.json();
+                            aiText = data.candidates[0].content.parts[0].text;
+                        } else {
+                            let targetUrl = 'https://api.openai.com/v1/chat/completions';
+                            if (provider === 'xai') {
+                                targetUrl = 'https://api.x.ai/v1/chat/completions';
+                            } else if (provider === 'openrouter') {
+                                targetUrl = 'https://openrouter.ai/api/v1/chat/completions';
+                            }
+                            const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(targetUrl), {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${apiKey}`
+                                },
+                                body: JSON.stringify({
+                                    model: model,
+                                    messages: [{ role: 'user', content: prompt }]
+                                })
+                            });
+                            if (!res.ok) {
+                                const errBody = await res.text();
+                                throw new Error(`API Error (${res.status}): ${errBody}`);
+                            }
+                            const data = await res.json();
+                            aiText = data.choices[0].message.content;
+                        }
+
+                        aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
+                        const parsed = JSON.parse(aiText);
+
+                        if (!this.currentPost.ideaLab || !this.currentPost.ideaLab.variants) {
+                            this.currentPost.ideaLab = { variants: [{ text: '', formulas: { emotion: '', contradiction: '', urgency: '', quantity: '' } }], selectedIndex: 0 };
+                        }
+
+                        const newVariant = {
+                            text: parsed.text || '',
+                            formulas: {
+                                emotion: parsed.emotion || '',
+                                contradiction: parsed.contradiction || '',
+                                urgency: parsed.urgency || '',
+                                quantity: parsed.quantity || ''
+                            }
+                        };
+
+                        this.currentPost.ideaLab.variants.push(newVariant);
+                        this.currentPost.ideaLab.selectedIndex = this.currentPost.ideaLab.variants.length - 1;
+                        this.saveData();
+
+                        this.$nextTick(() => {
+                            if (window.lucide) lucide.createIcons();
+                            if (typeof autoResizeAll === 'function') autoResizeAll('#openIdeaLab');
+                        });
+
+                    } catch (err) {
+                        console.error(err);
+                        alert('Не удалось сгенерировать идею. Проверьте правильность API ключа и выбранной модели.');
+                    } finally {
+                        this.isGeneratingAI = false;
+                    }
+                },
+
                 saveGithubSettings() {
                     localStorage.setItem('cp_github_token', this.githubToken.trim());
                     localStorage.setItem('cp_gist_id', this.gistId.trim());
-                    alert('Настройки GitHub сохранены!');
+                    alert('Настройки GitHub сохранены! Синхронизируем...');
                     this.openSettingsModal = false;
-                    this.syncWithGist();
+                    this.pullFromGist(true);
                 },
 
                 async syncWithGist() {
                     if (!this.githubToken) return;
-                    this.syncStatus = 'syncing';
-                    try {
-                        if (!this.gistId) {
-                            let res = await fetch('https://api.github.com/gists', {
-                                headers: { 'Authorization': `token ${this.githubToken}` }
-                            });
-                            if (res.ok) {
-                                let gists = await res.json();
-                                let existing = gists.find(g => g.description === 'ContentPlannerData');
-                                if (existing) {
-                                    this.gistId = existing.id;
-                                    localStorage.setItem('cp_gist_id', this.gistId);
-                                }
-                            }
-                        }
-
-                        const payload = {
-                            platforms: this.platforms,
-                            formats: this.formats,
-                            posts: this.posts,
-                            updatedAt: new Date().toISOString()
-                        };
-
-                        if (this.gistId) {
-                            let res = await fetch(`https://api.github.com/gists/${this.gistId}`, {
-                                method: 'PATCH',
-                                headers: {
-                                    'Authorization': `token ${this.githubToken}`,
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    description: 'ContentPlannerData',
-                                    files: {
-                                        'content_plan.json': {
-                                            content: JSON.stringify(payload, null, 2)
-                                        }
-                                    }
-                                })
-                            });
-                            if (res.ok) {
-                                this.syncStatus = 'synced';
-                            } else {
-                                this.syncStatus = 'error';
-                            }
-                        } else {
-                            let res = await fetch('https://api.github.com/gists', {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': `token ${this.githubToken}`,
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    description: 'ContentPlannerData',
-                                    public: false,
-                                    files: {
-                                        'content_plan.json': {
-                                            content: JSON.stringify(payload, null, 2)
-                                        }
-                                    }
-                                })
-                            });
-                            if (res.ok) {
-                                let data = await res.json();
-                                this.gistId = data.id;
-                                localStorage.setItem('cp_gist_id', this.gistId);
-                                this.syncStatus = 'synced';
-                            } else {
-                                this.syncStatus = 'error';
-                            }
-                        }
-                    } catch (e) {
-                        this.syncStatus = 'error';
-                    }
+                    await this.pullFromGist(false);
                 },
 
                 exportMarkdownBackup() {
