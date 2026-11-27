@@ -176,18 +176,17 @@
                     <div class="space-y-3">
                         <div class="space-y-2.5">
                             <template x-for="post in platformIdeas" :key="post.id">
-                                <div class="p-4 rounded-2xl border border-[#30363d] space-y-3 relative" x-data="{ openMenu: false, openStatusDropdown: false }">
-                                    <div class="pr-7">
-                                        <div class="space-y-1.5 min-w-0">
-                                            
-                                            <template x-if="post.scheduledDate">
-                                                <div class="flex items-center space-x-1 text-[10px] font-bold text-zinc-500 pb-1">
-                                                    <i data-lucide="clock" class="w-3 h-3"></i>
-                                                    <span x-text="formatDateHumanTime(post.scheduledDate, post.scheduledTime || '00:00')"></span>
-                                                </div>
-                                            </template>
+                                <div class="p-4 rounded-2xl border border-[#30363d] space-y-3" x-data="{ openMenu: false, openStatusDropdown: false }">
+                                    <div class="space-y-2">
+                                        <template x-if="post.scheduledDate">
+                                            <div class="flex items-center space-x-1 text-[10px] font-bold text-zinc-500">
+                                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                                <span x-text="formatDateHumanTime(post.scheduledDate, post.scheduledTime || '00:00')"></span>
+                                            </div>
+                                        </template>
 
-                                            <div class="flex items-center space-x-2 flex-wrap gap-y-1 pb-1">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <div class="flex items-center space-x-2 flex-wrap gap-y-1">
                                                 <!-- Status Dropdown Selector -->
                                                 <div class="relative">
                                                     <button @click="openStatusDropdown = !openStatusDropdown" 
@@ -219,53 +218,58 @@
 
                                                 <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#21262d] text-zinc-400 border border-[#30363d]" x-text="getFormatName(post.formatId)"></span>
                                             </div>
-                                            
-                                             <div class="flex items-baseline justify-between gap-2 cursor-pointer select-none" @click="post.isExpanded = !post.isExpanded; saveData()">
-                                                 <h3 class="text-sm font-bold text-white flex-1 leading-snug" x-text="post.title || 'Без названия'"></h3>
-                                                 <div class="flex items-center space-x-1.5">
-                                                     <span class="text-[10px] text-zinc-500 whitespace-nowrap font-medium" x-text="formatTelegramDate(post.createdAt)"></span>
-                                                     <svg class="w-3.5 h-3.5 text-zinc-500 transition-transform duration-200" :class="post.isExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                                                 </div>
-                                             </div>
-                                         </div>
-                                     </div>
 
-                                     <div class="absolute top-3 right-2">
-                                         <button @click="openMenu = !openMenu" class="p-2 text-zinc-400 hover:text-white transition">
-                                             <i data-lucide="more-vertical" class="w-5 h-5"></i>
-                                         </button>
-                                         <div x-show="openMenu" @click.away="openMenu = false" class="absolute right-0 mt-1 w-52 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl p-1.5 z-50 modal-enter" x-cloak>
-                                             <button @click="editPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                 <i data-lucide="edit-3" class="w-3.5 h-3.5 opacity-60"></i>
-                                                 <span>Редактировать</span>
-                                             </button>
-                                             <button @click="duplicatePost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                 <i data-lucide="clipboard" class="w-3.5 h-3.5 opacity-60"></i>
-                                                 <span>Дублировать</span>
-                                             </button>
-                                             <button @click="schedulePostModal(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                 <i data-lucide="calendar" class="w-3.5 h-3.5 opacity-60"></i>
-                                                 <span>Запланировать</span>
-                                             </button>
-                                             <button @click="
-                                                 const text = getStitchedPostText(post);
-                                                 navigator.clipboard.writeText(text).then(() => {});
-                                                 openMenu = false;
-                                             " class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                 <i data-lucide="copy" class="w-3.5 h-3.5 opacity-60"></i>
-                                                 <span>Копировать пост</span>
-                                             </button>
-                                             <button @click="copyGptPromptForPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
-                                                 <i data-lucide="cpu" class="w-3.5 h-3.5 opacity-60"></i>
-                                                 <span>Промпт для GPT</span>
-                                             </button>
-                                             <div class="border-t border-[#30363d] my-1"></div>
-                                             <button @click="deletePost(post.id); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition">
-                                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                                 <span>Удалить</span>
-                                             </button>
-                                         </div>
-                                     </div>
+                                            <div class="flex items-center space-x-2">
+                                                <div @click="post.isExpanded = !post.isExpanded; saveData()" class="flex items-center space-x-1.5 cursor-pointer select-none py-1">
+                                                    <span class="text-[10px] text-zinc-500 whitespace-nowrap font-medium" x-text="formatTelegramDate(post.updatedAt || post.createdAt)"></span>
+                                                    <svg class="w-3.5 h-3.5 text-zinc-500 transition-transform duration-200" :class="post.isExpanded ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                                </div>
+
+                                                <!-- 3 Dots Menu Button -->
+                                                <div class="relative">
+                                                    <button @click="openMenu = !openMenu" class="p-1 text-zinc-400 hover:text-white transition">
+                                                        <i data-lucide="more-vertical" class="w-4 h-4"></i>
+                                                    </button>
+                                                    <div x-show="openMenu" @click.away="openMenu = false" class="absolute right-0 mt-1 w-52 bg-[#161b22] border border-[#30363d] rounded-2xl shadow-2xl p-1.5 z-50 modal-enter" x-cloak>
+                                                        <button @click="editPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                            <i data-lucide="edit-3" class="w-3.5 h-3.5 opacity-60"></i>
+                                                            <span>Редактировать</span>
+                                                        </button>
+                                                        <button @click="duplicatePost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                            <i data-lucide="clipboard" class="w-3.5 h-3.5 opacity-60"></i>
+                                                            <span>Дублировать</span>
+                                                        </button>
+                                                        <button @click="schedulePostModal(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                            <i data-lucide="calendar" class="w-3.5 h-3.5 opacity-60"></i>
+                                                            <span>Запланировать</span>
+                                                        </button>
+                                                        <button @click="
+                                                            const text = getStitchedPostText(post);
+                                                            navigator.clipboard.writeText(text).then(() => {});
+                                                            openMenu = false;
+                                                        " class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                            <i data-lucide="copy" class="w-3.5 h-3.5 opacity-60"></i>
+                                                            <span>Копировать пост</span>
+                                                        </button>
+                                                        <button @click="copyGptPromptForPost(post); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white transition">
+                                                            <i data-lucide="cpu" class="w-3.5 h-3.5 opacity-60"></i>
+                                                            <span>Промпт для GPT</span>
+                                                        </button>
+                                                        <div class="border-t border-[#30363d] my-1"></div>
+                                                        <button @click="deletePost(post.id); openMenu = false" class="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-red-400/80 hover:bg-red-500/10 hover:text-red-400 transition">
+                                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                            <span>Удалить</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Title Area (Clickable to expand/collapse) -->
+                                        <div @click="post.isExpanded = !post.isExpanded; saveData()" class="cursor-pointer select-none pt-1">
+                                            <h3 class="text-sm font-bold text-white leading-snug" x-text="post.title || 'Без названия'"></h3>
+                                        </div>
+                                    </div>
 
                                      <!-- Blocks preview summary -->
                                      <div class="space-y-2 pt-1" x-show="post.isExpanded" x-transition>
@@ -587,7 +591,7 @@
                         <div class="flex items-center justify-between px-1">
                             <div class="flex items-center space-x-1.5">
                                 <label class="text-xs font-bold text-zinc-300" x-text="blockDef.label"></label>
-                                <span class="text-xs text-zinc-500" x-show="getBlockWordCount(currentPost.blocks[blockDef.key]) > 0" x-text="'(' + getBlockWordCount(currentPost.blocks[blockDef.key]) + ')'"></span>
+                                 <span class="text-xs text-zinc-500" x-show="getBlockWordCount(currentPost.blocks[blockDef.key]) > 0" x-text="formatWordCountInfo(currentPost.blocks[blockDef.key])"></span>
                             </div>
                         </div>
                         <textarea x-model="currentPost.blocks[blockDef.key]" 
@@ -605,7 +609,7 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-1.5">
                         <span class="text-xs font-bold text-white">Preview</span>
-                        <span class="text-xs text-zinc-500" x-show="getBlockWordCount(getStitchedPostText(currentPost)) > 0" x-text="'(' + getBlockWordCount(getStitchedPostText(currentPost)) + ')'"></span>
+                        <span class="text-xs text-zinc-500" x-show="getBlockWordCount(getStitchedBlocksText(currentPost)) > 0" x-text="formatWordCountInfo(getStitchedBlocksText(currentPost))"></span>
                     </div>
                     <div>
                         <button @click="
@@ -1716,13 +1720,14 @@
                     if (this.editingPostId) {
                         const idx = this.posts.findIndex(p => p.id === this.editingPostId);
                         if (idx !== -1) {
-                            this.posts[idx] = { ...this.posts[idx], ...this.currentPost };
+                            this.posts[idx] = { ...this.posts[idx], ...this.currentPost, updatedAt: new Date().toISOString() };
                         }
                     } else {
                         const newP = {
                             id: 'post_' + Date.now(),
                             ...this.currentPost,
-                            createdAt: new Date().toISOString()
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
                         };
                         this.posts.unshift(newP);
                     }
@@ -1772,6 +1777,52 @@
                         }
                     }
                     return textParts.join('\n\n');
+                },
+
+                getStitchedBlocksText(post) {
+                    if (!post || !post.formatId || !post.blocks) return '';
+                    const fmt = this.formats.find(f => f.id === post.formatId);
+                    if (!fmt) return '';
+                    let textParts = [];
+                    for (let b of fmt.blocks) {
+                        let val = post.blocks[b.key];
+                        if (val && val.trim()) {
+                            textParts.push(val.trim());
+                        }
+                    }
+                    return textParts.join('\n\n');
+                },
+
+                formatWordCountInfo(text) {
+                    if (!text) return '';
+                    const trimmed = text.trim();
+                    if (!trimmed) return '';
+                    const words = trimmed.split(/\s+/).filter(Boolean).length;
+                    if (words === 0) return '';
+                    
+                    // ~130 words per minute -> ~2.16 words per sec
+                    const totalSeconds = Math.round(words / (130 / 60));
+                    let timeStr = '';
+                    if (totalSeconds < 60) {
+                        timeStr = `${Math.max(1, totalSeconds)} сек`;
+                    } else {
+                        const mins = Math.floor(totalSeconds / 60);
+                        const secs = totalSeconds % 60;
+                        timeStr = secs > 0 ? `${mins} мин ${secs} сек` : `${mins} мин`;
+                    }
+                    
+                    let wordWord = 'слов';
+                    const lastDigit = words % 10;
+                    const lastTwo = words % 100;
+                    if (lastTwo >= 11 && lastTwo <= 19) {
+                        wordWord = 'слов';
+                    } else if (lastDigit === 1) {
+                        wordWord = 'слово';
+                    } else if (lastDigit >= 2 && lastDigit <= 4) {
+                        wordWord = 'слова';
+                    }
+                    
+                    return `(${words} ${wordWord} • ${timeStr})`;
                 },
 
                 copyStitchedPost(post) {
