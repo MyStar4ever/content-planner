@@ -2146,15 +2146,170 @@ ${structure}
 
                 saveGithubSettings() {
                     localStorage.setItem('cp_github_token', this.githubToken.trim());
-                    localStorage.setItem('cp_gist_id', this.gistId.trim());
-                    alert('Настройки GitHub сохранены! Синхронизируем...');
+                    localStorage.setItem('cp_gist_id', '');
+                    alert('Настройки сохранены! Загружаем с телефона...');
                     this.openSettingsModal = false;
                     this.pullFromGist(true);
                 },
 
-                async syncWithGist() {
-                    if (!this.githubToken) return;
-                    await this.pullFromGist(false);
+                async pullFromGist(showAlert = false) {
+                    if (!this.githubToken) {
+                        if (showAlert) alert('Сначала введите GitHub Personal Access Token!');
+                        return;
+                    }
+                    this.syncStatus = 'syncing';
+                    try {
+                        const token = this.githubToken.trim();
+                        let res = await fetch('https://api.github.com/gists', {
+                            headers: { 
+                                'Authorization': `token ${token}`,
+                                'Accept': 'application/vnd.github.v3+json'
+                            }
+                        });
+                        
+                        if (!res.ok) {
+                            let errText = await res.text();
+                            throw new Error(`Ошибка авторизации GitHub (${res.status}): ${errText}`);
+                        }
+
+                        let gists = await res.json();
+                        let existing = gists.find(g => g.description === 'ContentPlannerData' || (g.files && g.files['content_plan.json']));
+                        
+                        if (!existing) {
+                            this.syncStatus = 'error';
+                            if (showAlert) alert('В вашем GitHub аккаунте не найден Gist с контент-планом. Убедитесь, что на телефоне токен введен правильно и данные сохранены.');
+                            return;
+                        }
+
+                        this.gistId = existing.id;
+                        localStorage.setItem('cp_gist_id', this.gistId);
+
+                        let fileObj = existing.files['content_plan.json'];
+                        let contentStr = '';
+
+                        if (fileObj && fileObj.content) {
+                            contentStr = fileObj.content;
+                        } else {
+                            let detailRes = await fetch(`https://api.github.com/gists/${this.gistId}`, {
+                                headers: { 'Authorization': `token ${token}` }
+                            });
+                            if (!detailRes.ok) throw new Error('Не удалось загрузить содержимое Gist');
+                            let detailData = await detailRes.json();
+                            contentStr = detailData.files['content_plan.json'].content;
+                        }
+
+                        let parsed = JSON.parse(contentStr);
+
+                        if (parsed.platforms) {
+                            this.platforms = parsed.platforms;
+                            localStorage.setItem('cp_platforms_v1', JSON.stringify(this.platforms));
+                        }
+                        if (parsed.formats) {
+                            this.formats = parsed.formats;
+                            localStorage.setItem('cp_formats_v1', JSON.stringify(this.formats));
+                        }
+                        if (parsed.posts) {
+                            this.posts = parsed.posts;
+                            localStorage.setItem('cp_posts_v1', JSON.stringify(this.posts));
+                        }
+                        
+                        this.syncStatus = 'synced';
+                        this.lastSyncedAt = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        if (showAlert) alert(`Успешно загружено! Постов: ${this.posts.length}`);
+                    } catch (e) {
+                        console.error(e);
+                        this.syncStatus = 'error';
+                        if (showAlert) alert('Ошибка синхронизации: ' + e.message);
+                    }
+                },
+
+                async pushToGist(showAlert = false) {
+                    if (!this.githubToken) {
+                        if (showAlert) alert('Сначала введите GitHub Personal Access Token!');
+                        return;
+                    }
+                    this.syncStatus = 'syncing';
+                    try {
+                        const token = this.githubToken.trim();
+                        
+                        let res = await fetch('https://api.github.com/gists', {
+                            headers: { 
+                                'Authorization': `token ${token}`,
+                                'Accept': 'application/vnd.github.v3+json'
+                            }
+                        });
+                        if (res.ok) {
+                            let gists = await res.json();
+                            let existing = gists.find(g => g.description === 'ContentPlannerData' || (g.files && g.files['content_plan.json']));
+                            if (existing) {
+                                this.gistId = existing.id;
+                                localStorage.setItem('cp_gist_id', this.gistId);
+                            }
+                        }
+
+                        const payload = {
+                            platforms: this.platforms,
+                            formats: this.formats,
+                            posts: this.posts,
+                            updatedAt: new Date().toISOString()
+                        };
+
+                        if (this.gistId) {
+                            let patchRes = await fetch(`https://api.github.com/gists/${this.gistId}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Authorization': `token ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    description: 'ContentPlannerData',
+                                    files: {
+                                        'content_plan.json': {
+                                            content: JSON.stringify(payload, null, 2)
+                                        }
+                                    }
+                                })
+                            });
+                            if (patchRes.ok) {
+                                this.syncStatus = 'synced';
+                                this.lastSyncedAt = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                if (showAlert) alert('Данные успешно сохранены в Gist!');
+                            } else {
+                                throw new Error('Ошибка обновления Gist');
+                            }
+                        } else {
+                            let postRes = await fetch('https://api.github.com/gists', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `token ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    description: 'ContentPlannerData',
+                                    public: false,
+                                    files: {
+                                        'content_plan.json': {
+                                            content: JSON.stringify(payload, null, 2)
+                                        }
+                                    }
+                                })
+                            });
+                            if (postRes.ok) {
+                                let data = await postRes.json();
+                                this.gistId = data.id;
+                                localStorage.setItem('cp_gist_id', this.gistId);
+                                this.syncStatus = 'synced';
+                                this.lastSyncedAt = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                if (showAlert) alert('Создан новый Gist и данные сохранены!');
+                            } else {
+                                throw new Error('Ошибка создания Gist');
+                            }
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        this.syncStatus = 'error';
+                        if (showAlert) alert('Ошибка при сохранении в Gist: ' + e.message);
+                    }
                 },
 
                 exportMarkdownBackup() {
