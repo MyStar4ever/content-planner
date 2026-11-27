@@ -61,11 +61,6 @@
             </template>
         </div>
         <div class="flex items-center space-x-2">
-            <!-- Sync Indicator Button -->
-            <button @click="openSettingsModal = true; settingsSubView = 'gist'" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition px-2.5 py-1.5 rounded-full shadow-lg active:scale-95 flex items-center space-x-1.5 text-xs" :title="syncStatusText">
-                <span class="w-2 h-2 rounded-full" :class="syncStatusClass"></span>
-                <span class="text-[10px] text-zinc-400 font-medium hidden sm:inline" x-text="syncStatusLabel"></span>
-            </button>
             <template x-if="currentScreen === 'platforms'">
                 <button @click="openSettingsModal = true" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95" title="Настройки">
                     <i data-lucide="settings" class="w-5 h-5"></i>
