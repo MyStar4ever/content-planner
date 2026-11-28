@@ -1495,11 +1495,16 @@
                 },
 
                 saveData() {
-                    localStorage.setItem('cp_platforms_v1', JSON.stringify(this.platforms));
-                    localStorage.setItem('cp_formats_v1', JSON.stringify(this.formats));
-                    localStorage.setItem('cp_posts_v1', JSON.stringify(this.posts));
-                    localStorage.setItem('cp_ai_keys_v1', JSON.stringify(this.aiKeys));
-                    localStorage.setItem('cp_active_ai_key_id', this.activeAiKeyId);
+                    try {
+                        localStorage.setItem('cp_platforms_v1', JSON.stringify(this.platforms));
+                        localStorage.setItem('cp_formats_v1', JSON.stringify(this.formats));
+                        localStorage.setItem('cp_posts_v1', JSON.stringify(this.posts));
+                        localStorage.setItem('cp_ai_keys_v1', JSON.stringify(this.aiKeys));
+                        localStorage.setItem('cp_active_ai_key_id', this.activeAiKeyId);
+                    } catch (e) {
+                        console.error('Storage quota exceeded:', e);
+                        alert('Внимание: память браузера (localStorage) переполнена изображениями! Удалите старые посты.');
+                    }
 
                     if (this.githubToken) {
                         this.debouncedSyncGist();
@@ -1732,18 +1737,6 @@
                     this.currentPost = JSON.parse(JSON.stringify(post));
                     if (!this.currentPost.blockImages) {
                         this.currentPost.blockImages = {};
-                    }
-                    // Clean legacy img tags from blocks and move to blockImages
-                    for (let key in this.currentPost.blocks) {
-                        if (this.currentPost.blocks[key]) {
-                            const match = this.currentPost.blocks[key].match(/src="(data:image\/[^"]+)"/);
-                            if (match && match[1]) {
-                                if (!this.currentPost.blockImages[key]) {
-                                    this.currentPost.blockImages[key] = match[1];
-                                }
-                            }
-                            this.currentPost.blocks[key] = this.currentPost.blocks[key].replace(/<img[^>]+src="data:image\/[^">]+"[^>]*>/g, '').trim();
-                        }
                     }
                     if (!this.currentPost.ideaLab || !this.currentPost.ideaLab.variants) {
                         this.currentPost.ideaLab = { 
@@ -2462,7 +2455,7 @@ ${structure}
                             const canvas = document.createElement('canvas');
                             let width = img.width;
                             let height = img.height;
-                            const maxWidth = 800;
+                            const maxWidth = 500;
                             if (width > maxWidth) {
                                 height = Math.round((height * maxWidth) / width);
                                 width = maxWidth;
@@ -2471,7 +2464,7 @@ ${structure}
                             canvas.height = height;
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, width, height);
-                            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                             
                             const blockEl = document.querySelector(`[data-block-key="${blockKey}"]`);
                             if (blockEl) {
