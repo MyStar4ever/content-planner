@@ -557,94 +557,88 @@
                                 el.innerHTML = '';
                             }
                         });
-                        autoResizeAll('#openPostModal');
                     });
-                    setTimeout(() => autoResizeAll('#openPostModal'), 50);
-                    setTimeout(() => autoResizeAll('#openPostModal'), 150);
                 }
             })
          "
          id="openPostModal"
-         class="fixed inset-0 z-50 bg-black flex flex-col p-4 overflow-y-auto modal-enter" x-cloak>
-        <div class="max-w-xl w-full mx-auto space-y-5 pb-20">
-             <!-- Top bar -->
-            <div class="flex items-center justify-between pt-2 pb-2">
-                <h3 class="text-sm font-bold text-white hidden"></h3>
-                <button @click="closePostModal()" class="p-2 text-zinc-400 hover:text-white transition ml-auto">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
+         class="fixed inset-0 z-50 bg-black flex flex-col modal-enter" x-cloak>
+        
+        <!-- Header (Fixed & Original Style) -->
+        <div class="fixed top-0 left-0 right-0 z-[60] bg-transparent px-4 flex items-center justify-between" style="padding-top: env(safe-area-inset-top, 0px); height: calc(env(safe-area-inset-top, 0px) + 48px);">
+            <button @click="closePostModal()" class="text-zinc-300 bg-[#161b22]/80 hover:bg-[#21262d] border border-[#30363d] transition p-2 rounded-full shadow-lg active:scale-95">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+        </div>
 
-            <!-- Post Title & Format Selector -->
-            <div class="space-y-3">
-                <div>
-                    <div class="flex items-center justify-between">
-                        <label class="text-xs text-zinc-400 font-medium">Идея</label>
-                        <button @click="openIdeaLabModal()" class="p-1.5 rounded-xl bg-transparent hover:bg-[#161b22] text-amber-400 transition flex items-center justify-center border border-[#30363d]" title="Лаборатория идей">
-                            <i data-lucide="lightbulb" class="w-4 h-4"></i>
-                        </button>
+        <div class="flex-1 overflow-y-auto px-4" style="padding-top: calc(env(safe-area-inset-top, 0px) + 60px);">
+            <div class="max-w-md mx-auto space-y-5 pb-20">
+                
+                <!-- Post Title & Format Selector -->
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs text-zinc-400 font-medium">Идея</label>
+                            <button @click="openIdeaLabModal()" class="p-1.5 rounded-xl bg-transparent hover:bg-[#161b22] text-amber-400 transition flex items-center justify-center border border-[#30363d]" title="Лаборатория идей">
+                                <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <textarea x-model="currentPost.title" 
+                                  placeholder="О чем этот пост..." 
+                                  @input="autoResize($el); debouncedSave()"
+                                  class="w-full mt-1 px-3.5 py-3 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
                     </div>
-                    <textarea x-model="currentPost.title" 
-                              placeholder="О чем этот пост..." 
-                              @input="autoResize($el)"
-                              x-effect="$nextTick(() => autoResize($el))"
-                              x-init="$nextTick(() => autoResize($el))"
-                              class="w-full mt-1 px-3.5 py-3 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none resize-none overflow-hidden"></textarea>
+
+                    <div>
+                        <label class="text-xs text-zinc-400 font-medium">Формат</label>
+                        <select x-model="currentPost.formatId" @change="debouncedSave()" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
+                            <template x-for="fmt in formats" :key="fmt.id">
+                                <option :value="fmt.id" x-text="fmt.name"></option>
+                            </template>
+                        </select>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="text-xs text-zinc-400 font-medium">Формат</label>
-                    <select x-model="currentPost.formatId" class="w-full mt-1 px-3 py-2.5 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none">
-                        <template x-for="fmt in formats" :key="fmt.id">
-                            <option :value="fmt.id" x-text="fmt.name"></option>
-                        </template>
-                    </select>
-                </div>
-            </div>
-
-            <!-- BLOCKS FILLING -->
-            <div class="space-y-4 pt-2">
-                <template x-for="blockDef in activePostFormatBlocks" :key="blockDef.key">
-                    <div class="space-y-1" x-data="{ openBlockMenu: false }">
-                        <div class="flex items-center justify-between px-1">
-                            <div class="flex items-center space-x-1.5">
-                                <label class="text-xs font-bold text-zinc-300" x-text="blockDef.label"></label>
-                                 <span class="text-xs text-zinc-500" x-show="getBlockWordCount(currentPost.blocks[blockDef.key]) > 0" x-text="formatWordCountInfo(currentPost.blocks[blockDef.key])"></span>
-                            </div>
-                            <div class="relative">
-                                <button @click="saveBlockSelection(blockDef.key); openBlockMenu = !openBlockMenu" class="p-1 text-zinc-400 hover:text-white transition flex items-center justify-center cursor-pointer" title="Добавить...">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                                </button>
-                                <!-- Context Menu -->
-                                <div x-show="openBlockMenu" @click.away="openBlockMenu = false" class="absolute right-0 mt-1 w-48 bg-[#1c1c1e] border border-[#30363d] rounded-xl shadow-2xl p-1 z-50 modal-enter" x-cloak>
-                                    <button @click="triggerImageUpload(blockDef.key); openBlockMenu = false" class="w-full text-left px-3 py-2 rounded-lg text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white flex items-center space-x-2.5 transition">
-                                        <i data-lucide="image" class="w-4 h-4 text-zinc-400"></i>
-                                        <span>Добавить изображение</span>
+                <!-- BLOCKS FILLING -->
+                <div class="space-y-4 pt-2">
+                    <template x-for="blockDef in activePostFormatBlocks" :key="blockDef.key">
+                        <div class="space-y-1" x-data="{ openBlockMenu: false }">
+                            <div class="flex items-center justify-between px-1">
+                                <div class="flex items-center space-x-1.5">
+                                    <label class="text-xs font-bold text-zinc-300" x-text="blockDef.label"></label>
+                                     <span class="text-xs text-zinc-500" x-show="getBlockWordCount(currentPost.blocks[blockDef.key]) > 0" x-text="formatWordCountInfo(currentPost.blocks[blockDef.key])"></span>
+                                </div>
+                                <div class="relative">
+                                    <button @click="saveBlockSelection(blockDef.key); openBlockMenu = !openBlockMenu" class="p-1 text-zinc-400 hover:text-white transition flex items-center justify-center cursor-pointer" title="Добавить...">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                                     </button>
+                                    <div x-show="openBlockMenu" @click.away="openBlockMenu = false" class="absolute right-0 mt-1 w-48 bg-[#1c1c1e] border border-[#30363d] rounded-xl shadow-2xl p-1 z-50 modal-enter" x-cloak>
+                                        <button @click="triggerImageUpload(blockDef.key); openBlockMenu = false" class="w-full text-left px-3 py-2 rounded-lg text-xs text-zinc-300 hover:bg-[#21262d] hover:text-white flex items-center space-x-2.5 transition">
+                                            <i data-lucide="image" class="w-4 h-4 text-zinc-400"></i>
+                                            <span>Добавить изображение</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+                            <div contenteditable="true"
+                                 :data-block-key="blockDef.key"
+                                 placeholder="Введите текст..."
+                                 @focus="saveBlockSelection(blockDef.key)"
+                                 @keyup="saveBlockSelection(blockDef.key); currentPost.blocks[blockDef.key] = $el.innerHTML; debouncedSave()"
+                                 @mouseup="saveBlockSelection(blockDef.key)"
+                                 @input="currentPost.blocks[blockDef.key] = $el.innerHTML; debouncedSave()"
+                                 class="w-full min-h-[90px] px-3.5 py-3 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none overflow-y-auto"></div>
                         </div>
-                        <div contenteditable="true"
-                             :data-block-key="blockDef.key"
-                             placeholder="Введите текст..."
-                             @focus="saveBlockSelection(blockDef.key)"
-                             @keyup="saveBlockSelection(blockDef.key); currentPost.blocks[blockDef.key] = $el.innerHTML"
-                             @mouseup="saveBlockSelection(blockDef.key)"
-                             @input="currentPost.blocks[blockDef.key] = $el.innerHTML; saveData()"
-                             x-init="$nextTick(() => { if (currentPost.blocks && currentPost.blocks[blockDef.key]) $el.innerHTML = currentPost.blocks[blockDef.key]; })"
-                             class="w-full min-h-[90px] px-3.5 py-3 rounded-xl bg-transparent text-white text-xs border border-[#30363d] focus:border-zinc-500 outline-none overflow-y-auto"></div>
-                    </div>
-                </template>
-            </div>
+                    </template>
+                </div>
 
-            <!-- LIVE PREVIEW & COPY BUTTON EXPLANATION -->
-            <div class="space-y-2 pt-2 border-t border-[#21262d]" x-data="{ copied: false }">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-1.5">
-                        <span class="text-xs font-bold text-white">Preview</span>
-                        <span class="text-xs text-zinc-500" x-show="getBlockWordCount(getStitchedBlocksText(currentPost)) > 0" x-text="formatWordCountInfo(getStitchedBlocksText(currentPost))"></span>
-                    </div>
-                    <div>
+                <!-- LIVE PREVIEW & COPY BUTTON -->
+                <div class="space-y-2 pt-2 border-t border-[#21262d]" x-data="{ copied: false }">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="text-xs font-bold text-white">Preview</span>
+                            <span class="text-xs text-zinc-500" x-show="getBlockWordCount(getStitchedBlocksText(currentPost)) > 0" x-text="formatWordCountInfo(getStitchedBlocksText(currentPost))"></span>
+                        </div>
                         <button @click="
                             const text = getStitchedPostText(currentPost);
                             navigator.clipboard.writeText(text).then(() => {
@@ -656,17 +650,11 @@
                             <i x-show="copied" data-lucide="check" class="w-4 h-4 text-emerald-400" x-cloak></i>
                         </button>
                     </div>
+                    <div class="p-3.5 rounded-xl bg-transparent border border-[#30363d] text-xs text-zinc-300 whitespace-pre-wrap font-sans" x-text="getStitchedPostText(currentPost) || 'Здесь появится готовый текст поста после заполнения блоков...'"></div>
                 </div>
-                <div class="p-3.5 rounded-xl bg-transparent border border-[#30363d] text-xs text-zinc-300 whitespace-pre-wrap font-sans" x-text="getStitchedPostText(currentPost) || 'Здесь появится готовый текст поста после заполнения блоков...'"></div>
             </div>
-
-            <!-- Save Buttons -->
-            <div class="flex items-center justify-end pt-4" x-data="{ savedAnim: false }">
-                <button @click="savePost(); savedAnim = true; setTimeout(() => savedAnim = false, 2000); setTimeout(() => closePostModal(), 400)" class="p-3 rounded-xl bg-transparent hover:bg-[#161b22] text-zinc-300 hover:text-white transition flex items-center justify-center border border-[#30363d] relative" title="Сохранить">
-                    <i x-show="!savedAnim" data-lucide="check" class="w-5 h-5 text-emerald-400"></i>
-                    <i x-show="savedAnim" data-lucide="check" class="w-5 h-5 text-emerald-400 scale-125 transition-transform" x-cloak></i>
-                </button>
-            </div>
+        </div>
+    </div>
         </div>
     </div>
 
@@ -1153,6 +1141,39 @@
                 scheduleTimeInput: '12:00',
                 resultsCheckDateInput: '',
 
+                isSyncing: false,
+                saveTimeout: null,
+
+                debouncedSave() {
+                    this.isSyncing = true;
+                    clearTimeout(this.saveTimeout);
+                    this.saveTimeout = setTimeout(() => {
+                        this.savePostInternal();
+                        this.isSyncing = false;
+                    }, 1000);
+                },
+
+                savePostInternal() {
+                    if (!this.currentPost.title && !this.currentPost.formatId) return;
+                    if (this.editingPostId) {
+                        const idx = this.posts.findIndex(p => p.id === this.editingPostId);
+                        if (idx !== -1) {
+                            this.posts[idx] = { ...this.posts[idx], ...this.currentPost, updatedAt: new Date().toISOString() };
+                        }
+                    } else {
+                        // Если это новый пост, создаем ID при первом сохранении
+                        this.editingPostId = 'post_' + Date.now();
+                        const newP = {
+                            id: this.editingPostId,
+                            ...this.currentPost,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        this.posts.unshift(newP);
+                    }
+                    this.saveData();
+                },
+
                 // Calendar week view
                 weekOffset: 0,
                 currentDate: new Date(),
@@ -1387,12 +1408,13 @@
                 stripHtml(html) {
                     if (!html) return '';
                     let tmp = html.replace(/<img[^>]*>/gi, ' [Фото] ');
-                    return tmp.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                    tmp = tmp.replace(/✕/g, ''); // Удаляем символ кнопки удаления из превью
+                    return tmp.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
                 },
 
                 getBlockWordCount(text) {
                     if (!text) return 0;
-                    const cleanText = text.replace(/<[^>]*>/g, ' ').trim();
+                    const cleanText = text.replace(/<[^>]*>/g, ' ').replace(/✕/g, '').replace(/&nbsp;/g, ' ').trim();
                     if (!cleanText) return 0;
                     return cleanText.split(/\s+/).filter(Boolean).length;
                 },
@@ -1627,6 +1649,43 @@
                     return b ? b.label : blockKey;
                 },
 
+                isSyncing: false,
+                saveTimeout: null,
+                debouncedSave() {
+                    this.isSyncing = true;
+                    clearTimeout(this.saveTimeout);
+                    this.saveTimeout = setTimeout(() => {
+                        this.savePostInternal();
+                        this.isSyncing = false;
+                    }, 500);
+                },
+                savePostInternal() {
+                    if (!this.currentPost) return;
+                    if (this.editingPostId) {
+                        const idx = this.posts.findIndex(p => p.id === this.editingPostId);
+                        if (idx !== -1) {
+                            this.posts[idx] = { ...this.posts[idx], ...this.currentPost, updatedAt: new Date().toISOString() };
+                        } else {
+                            this.posts.unshift({
+                                id: this.editingPostId,
+                                ...this.currentPost,
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString()
+                            });
+                        }
+                    } else {
+                        this.editingPostId = 'post_' + Date.now();
+                        const newP = {
+                            id: this.editingPostId,
+                            ...this.currentPost,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        this.posts.unshift(newP);
+                    }
+                    this.saveData();
+                },
+
                 openNewPostModal() {
                     if (!this.activePlatform) return;
                     const defaultFormat = this.formats[0] ? this.formats[0].id : '';
@@ -1771,6 +1830,8 @@
                 },
 
                 closePostModal() {
+                    this.savePostInternal();
+                    this.saveData();
                     this.openPostModal = false;
                     this.editingPostId = null;
                 },
@@ -2425,8 +2486,8 @@ ${structure}
                                 
                                 const wrapper = document.createElement('div');
                                 wrapper.contentEditable = 'false';
-                                wrapper.className = 'relative my-2 inline-block max-w-full group/img select-none align-middle block';
-                                wrapper.innerHTML = `<img src="${dataUrl}" class="max-h-60 max-w-full rounded-xl border border-[#30363d] object-cover shadow-md" /><button type="button" onclick="const p = this.closest('.space-y-1'); this.closest('.group\\\\/img').remove(); if (p) { const b = p.querySelector('[data-block-key]'); if (b) b.dispatchEvent(new Event('input')); }" class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs opacity-90 transition shadow-lg cursor-pointer">✕</button>`;
+                                wrapper.className = 'relative my-3 block w-full group/img select-none';
+                                wrapper.innerHTML = `<img src="${dataUrl}" class="w-full h-auto rounded-2xl border border-[#30363d] shadow-2xl" /><button type="button" onclick="if(confirm('Удалить изображение?')) { const p = this.closest('.space-y-1') || this.closest('.space-y-2.5'); this.closest('.group\\\\/img').remove(); if (p) { const b = p.querySelector('[data-block-key]'); if (b) b.dispatchEvent(new Event('input')); } }" class="absolute top-3 right-3 w-7 h-7 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-full flex items-center justify-center text-xs transition shadow-lg cursor-pointer" title="Удалить">✕</button>`;
                                 
                                 let range;
                                 if (sel.rangeCount > 0) {
@@ -2447,7 +2508,8 @@ ${structure}
                                 sel.addRange(range);
                                 
                                 this.currentPost.blocks[blockKey] = blockEl.innerHTML;
-                                this.saveData();
+                                this.savePostInternal(); // Принудительно обновляем в общем списке
+                                this.saveData();         // Сохраняем в localStorage
                             }
                             
                             this.$nextTick(() => {
