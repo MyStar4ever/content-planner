@@ -2480,7 +2480,30 @@ ${structure}
                                 const wrapper = document.createElement('div');
                                 wrapper.contentEditable = 'false';
                                 wrapper.className = 'relative my-3 block w-full group/img select-none';
-                                wrapper.innerHTML = `<img src="${dataUrl}" class="w-full h-auto rounded-2xl border border-[#30363d] shadow-2xl" /><button type="button" onclick="if(confirm('Удалить изображение?')) { const p = this.closest('.space-y-1') || this.closest('.space-y-2.5'); this.closest('.group\\\\/img').remove(); if (p) { const b = p.querySelector('[data-block-key]'); if (b) b.dispatchEvent(new Event('input')); } }" class="absolute top-3 right-3 w-7 h-7 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-full flex items-center justify-center text-xs transition shadow-lg cursor-pointer" title="Удалить">✕</button>`;
+                                
+                                const imgEl = document.createElement('img');
+                                imgEl.src = dataUrl;
+                                imgEl.className = 'w-full h-auto rounded-2xl border border-[#30363d] shadow-2xl';
+                                
+                                const delBtn = document.createElement('button');
+                                delBtn.type = 'button';
+                                delBtn.className = 'absolute top-3 right-3 w-7 h-7 bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-full flex items-center justify-center text-xs transition shadow-lg cursor-pointer';
+                                delBtn.title = 'Удалить';
+                                delBtn.textContent = '✕';
+                                
+                                delBtn.addEventListener('click', (ev) => {
+                                    ev.preventDefault();
+                                    ev.stopPropagation();
+                                    if (confirm('Удалить изображение?')) {
+                                        wrapper.remove();
+                                        this.currentPost.blocks[blockKey] = blockEl.innerHTML;
+                                        this.savePostInternal();
+                                        this.saveData();
+                                    }
+                                });
+                                
+                                wrapper.appendChild(imgEl);
+                                wrapper.appendChild(delBtn);
                                 
                                 let range;
                                 if (sel.rangeCount > 0) {
